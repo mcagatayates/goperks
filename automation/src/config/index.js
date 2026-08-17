@@ -30,6 +30,9 @@ module.exports = {
     kdvExemptionDesc: process.env.LOGO_KDV_EXEMPTION_DESC || 'Hizmet İhracı',
     currency: process.env.LOGO_INVOICE_CURRENCY || 'TL',
     template: process.env.LOGO_INVOICE_TEMPLATE || 'Toptan Satış Faturası (KDV Hariç)',
+    // Yabancı bireysel müşteriler için Logo İşbaşı'nda kullandığınız yer
+    // tutucu T.C. Kimlik No (gerçek müşteri kayıtlarınızda görülen değer).
+    foreignCustomerTcNo: process.env.LOGO_FOREIGN_CUSTOMER_TCKN || '2222222222',
   },
   tcmb: {
     rateType: process.env.TCMB_RATE_TYPE || 'ForexSelling',

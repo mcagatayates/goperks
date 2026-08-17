@@ -67,18 +67,23 @@ etmeden önce:
    endpointinden alınır." Kodun gerçekten `302/11/1-a` olarak mı, yoksa
    `/master/vatexcepts` listesindeki başka bir kod/ID olarak mı
    gönderilmesi gerektiği teyit edilmeli.
-5. **`eGovernmentInvoice.eGovernmentType`** — Dokümana göre istisna
-   (muafiyet) faturalarında bu alanın doldurulması gerekiyor ama "Hizmet
-   İhracı" için hangi değerin kullanılacağı belirtilmemiş.
-   `invoiceMapper.js` içinde bu alan bilinçli olarak yorum satırı halinde
-   bırakıldı — doldurulmadan gönderilirse fatura muhtemelen normal (istisnasız)
-   satış faturası olarak oluşur.
-6. **Müşteri (cari) eşleştirme davranışı** — Dokümana göre `customer.code`
-   verilmezse, bireysel müşteri için `firstName+lastName+taxOrPersonalId`
-   eşleşmesine bakılıyor; Etsy alıcılarının Türk vergi/TC kimlik numarası
-   olmadığından **her sipariş için muhtemelen yeni bir cari açılacak**.
-   Bunun yerine tek bir ortak "Etsy Alıcıları" cari kodu kullanmak isterseniz
-   `invoiceMapper.js`'e `customer.code` eklenmeli — tercihinizi belirtin.
+5. **`eArchivePortalInvoice.eGovernmentType`** — Paylaştığınız gerçek müşteri
+   kartı ekran görüntüsünde "Fatura Türü: E-Arşiv" (İnternet değil) ve
+   "İrsaliye Yerine Geçer" işaretli olduğu için `invoiceMapper.js` artık
+   `eArchivePortalInvoice: { isEArchive: true, dispatchIncluded: true }`
+   gönderiyor — bu kısım ekran görüntüsüyle doğrulandı. Ancak ekranda görünen
+   "GİB Fatura Tipi: Satış" seçeneğinin API'deki `eGovernmentType` sayısal/
+   string değeri dokümanda verilmemiş; alan şu an bilinçli olarak boş
+   bırakıldı (gönderilen JSON'da otomatik olarak düşüyor).
+6. ✅ **Müşteri (cari) eşleştirme davranışı** — Teyit edildi: her sipariş
+   için yeni bir cari açılacak (ortak/paylaşılan bir "Etsy Alıcıları" kodu
+   kullanılmıyor). `customer.code` bilinçli olarak gönderilmiyor.
+   Paylaştığınız gerçek müşteri kartına göre `taxOrPersonalId` alanına
+   yabancı bireysel müşteriler için kullandığınız yer tutucu değer
+   (`LOGO_FOREIGN_CUSTOMER_TCKN`, varsayılan `2222222222`) ve
+   `notApplyVat: true` eklendi. Adres, ekran görüntüsündeki gibi tek bir
+   serbest metin bloğu olarak gönderiliyor (il/ilçe alanları boş
+   bırakılıyor, yalnızca `country` dropdown'ı dolduruluyor).
 7. **Kur tipi** — TCMB kurundan hangisinin (`ForexBuying`/`ForexSelling`/...)
    kullanılacağı `TCMB_RATE_TYPE` ile ayarlanabilir; mali müşavirinizle teyit
    edin.

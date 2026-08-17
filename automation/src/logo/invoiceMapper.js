@@ -3,14 +3,19 @@ const { toTurkishCountryName } = require('./countries');
 
 /**
  * Maps a parsed Etsy order into a POST /api/v1.0/invoices/integrationInvoices
- * request body, per the İşbaşı API reference (Fatura > Kaydetme-Güncelleme):
+ * request body, per the İşbaşı API reference (Fatura > Kaydetme-Güncelleme)
+ * and the real "Müşteri & Tedarikçi Hesap Düzenle" screenshots shared for a
+ * foreign individual customer:
  *
  *   - invoiceId: 0 means "create new".
- *   - customer: sent inline. Per the docs, if no matching `code` is given,
- *     İşbaşı matches/creates the cari by firstName+lastName+taxOrPersonalId
- *     (bireysel) — since Etsy buyers have no Turkish tax/personal ID, a new
- *     cari will be created for every order. That may be what you want, or
- *     you may prefer one shared "Etsy Alıcıları" cari — confirm.
+ *   - customer: sent inline, no `code` — confirmed a new cari is created for
+ *     every order (no shared "Etsy buyers" cari).
+ *   - taxOrPersonalId / notApplyVat: the reference customer card uses a
+ *     placeholder TCKN ("2222222222", see LOGO_FOREIGN_CUSTOMER_TCKN) and
+ *     has "KDV Uygulanmaz" checked for foreign individual buyers.
+ *   - address: sent as one free-text block (street, then "CITY, STATE ZIP",
+ *     then country) — the reference card leaves the structured city/state/
+ *     postalCode fields empty and only sets the `country` dropdown.
  *   - vatIncluded: false → matches the "Toptan Satış Faturası (KDV Hariç)"
  *     reference template.
  *   - salesInvoiceDetails: line items. The docs describe this array's
@@ -18,9 +23,12 @@ const { toTurkishCountryName } = require('./countries');
  *     reasonable draft (productName/quantity/unit/price/vatRate/
  *     vatExemptionCode) and must be checked against a real response/error
  *     from the test environment before going live.
- *   - eGovernmentInvoice.eGovernmentType: the docs say this must be set for
- *     an "istisna" (exemption) invoice but don't give the enum value for
- *     "Hizmet İhracı" — left as a TODO placeholder rather than a guess.
+ *   - eArchivePortalInvoice: the reference card has "Fatura Türü: E-Arşiv"
+ *     (not E-Arşiv İnternet) and "İrsaliye Yerine Geçer" checked, which
+ *     matches the docs' "E-Arşiv Portal Faturası" case (isEArchive,
+ *     dispatchIncluded, eGovernmentType). "GİB Fatura Tipi: Satış" is shown
+ *     in the UI but the numeric eGovernmentType value for it isn't given in
+ *     the docs — left as a TODO rather than a guess.
  */
 function mapOrderToInvoice(order, { usdToTryRate }, existingInvoiceId = 0) {
   const address = order.shippingAddress;
@@ -46,19 +54,22 @@ function mapOrderToInvoice(order, { usdToTryRate }, existingInvoiceId = 0) {
     };
   });
 
+  const buyerName = address?.name || order.buyerUsername || 'Etsy Alıcısı';
+  const [firstName, ...lastNameParts] = buyerName.split(' ');
+  const lastName = lastNameParts.join(' ') || 'Alıcısı';
+
   return {
     invoiceId: existingInvoiceId,
     customer: {
       isPersonalCompany: true,
       isForeign: true,
-      firstName: address?.name?.split(' ').slice(0, -1).join(' ') || address?.name || order.buyerUsername || 'Etsy',
-      lastName: address?.name?.split(' ').slice(-1).join(' ') || 'Alıcısı',
-      fullName: address?.name || order.buyerUsername || 'Etsy Alıcısı',
-      displayName: address?.name || order.buyerUsername || 'Etsy Alıcısı',
-      address: address?.street || null,
-      city: address?.city || null,
-      state: address?.state || null,
-      postalCode: address?.zip || null,
+      firstName,
+      lastName,
+      fullName: buyerName,
+      displayName: buyerName,
+      taxOrPersonalId: config.invoiceDefaults.foreignCustomerTcNo,
+      notApplyVat: true,
+      address: formatAddressBlock(address),
       country: toTurkishCountryName(address?.country),
       emailAddress: null,
     },
@@ -68,11 +79,21 @@ function mapOrderToInvoice(order, { usdToTryRate }, existingInvoiceId = 0) {
     description: `${config.invoiceDefaults.kdvExemptionDesc} — Etsy Order #${order.orderNumber}`,
     categoryName: config.invoiceDefaults.template,
     vatIncluded: false,
-    // TODO — confirm the correct eGovernmentType code for a "Hizmet İhracı"
-    // (302/11/1-a) export-exemption sales invoice before enabling this.
-    // eGovernmentInvoice: { eGovernmentType: undefined },
+    eArchivePortalInvoice: {
+      isEArchive: true,
+      dispatchIncluded: true,
+      // TODO — confirm the numeric/string value İşbaşı expects here for the
+      // "GİB Fatura Tipi: Satış" option shown in the customer's e-Devlet tab.
+      eGovernmentType: undefined,
+    },
     salesInvoiceDetails,
   };
+}
+
+function formatAddressBlock(address) {
+  if (!address) return null;
+  const cityLine = [address.city, address.state].filter(Boolean).join(', ') + (address.zip ? ` ${address.zip}` : '');
+  return [address.street, cityLine.trim() || null, address.country].filter(Boolean).join('\n');
 }
 
 function formatInvoiceDate(date) {
