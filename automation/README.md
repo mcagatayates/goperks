@@ -41,36 +41,58 @@ npm start      # RUN_ONCE=false ile sürekli döngüde çalışır (POLL_INTERVA
 
 ## ⚠️ Canlıya almadan önce doğrulanması gerekenler
 
-Bu ilk sürüm, sağladığınız login endpoint bilgisi ve tek bir örnek sipariş
-e-postası ile hazırlandı. Bu oturumun ağ politikası test ortamına
-(`soho-isbasi-mwv2-test.logo-paas.com`) ve `developers.isbasi.com` dokümantasyon
-portalına erişimi engellediği için **hiçbir Logo API çağrısı canlı test
-edilemedi**. Devam etmeden önce:
+`developers.isbasi.com` API referansı paylaşıldıktan sonra endpoint'ler ve
+login/fatura akışı gerçek dokümana göre güncellendi, ancak bu oturumun ağ
+politikası test ortamına (`soho-isbasi-mwv2-test.logo-paas.com`) erişimi
+engellediği için **hiçbir Logo API çağrısı canlı test edilemedi**. Devam
+etmeden önce:
 
-1. **Fatura oluşturma endpoint'i** — `src/logo/logoClient.js` içindeki
-   `POST /api/v1.0/invoice/create` yolu ve `src/logo/invoiceMapper.js`
-   içindeki alan adları (customer/lines/vatRate vb.) **tahmini**dir, gerçek
-   API şemasıyla teyit edilip güncellenmelidir. `developers.isbasi.com`
-   üzerinden ilgili endpoint dokümanını paylaşırsanız bu kısmı kesinleştiririm.
-2. **Login yanıt formatı** — `logoClient.js`'deki token alanı adı
-   (`token`/`accessToken`/`data.token`) doğrulanmalı.
-3. **Müşteri kaydı** — Logo, faturalamadan önce müşterinin ayrıca
-   oluşturulmasını/aranmasını mı istiyor, yoksa müşteri bilgisi fatura isteğine
-   satır içi mi gönderiliyor? Dokümana göre netleştirilmeli.
-4. **Kur tipi** — TCMB kurundan hangisinin (`ForexBuying`/`ForexSelling`/...)
+1. ✅ **Fatura oluşturma endpoint'i** — `POST /api/v1.0/invoices/integrationInvoices`
+   olarak doğrulandı (`src/logo/logoClient.js`). `invoiceId: 0` yeni kayıt
+   oluşturur.
+2. **Login yanıt alan adları** — `integrationLogin` yanıtındaki token/tenant
+   alanlarının tam adı (`accessToken`/`token`, `tenantId`/`TenantId`) API
+   referansında örnek yanıt olarak verilmedi, sadece istek örneği var.
+   `src/logo/logoClient.js` yaygın adlandırmaları deniyor ve eşleşmezse
+   hata fırlatıyor — test ortamına gerçek bir login denemesi yapılıp
+   dönen JSON paylaşılırsa kesinleştirilir.
+3. **`salesInvoiceDetails` satır alanları** — API referansı bu dizinin
+   amacını anlatıyor ("ürün/hizmet adı, miktar, tutar, KDV oranı") ama tam
+   alan adlarını tablo halinde vermiyor. `src/logo/invoiceMapper.js`
+   içindeki `productName/quantity/unit/price/vatRate/vatExemptionCode`
+   alanları makul bir taslak; test ortamında bir deneme isteğiyle (muhtemelen
+   400 hatası dönerse mesajındaki eksik/yanlış alan adlarıyla) netleştirilmeli.
+4. **`vatExemptionCode` konumu** — Dokümana göre "Muafiyetli satırlar için
+   vatExemptionCode doldurulmalıdır, kodlar `/api/v1.0/master/vatexcepts`
+   endpointinden alınır." Kodun gerçekten `302/11/1-a` olarak mı, yoksa
+   `/master/vatexcepts` listesindeki başka bir kod/ID olarak mı
+   gönderilmesi gerektiği teyit edilmeli.
+5. **`eGovernmentInvoice.eGovernmentType`** — Dokümana göre istisna
+   (muafiyet) faturalarında bu alanın doldurulması gerekiyor ama "Hizmet
+   İhracı" için hangi değerin kullanılacağı belirtilmemiş.
+   `invoiceMapper.js` içinde bu alan bilinçli olarak yorum satırı halinde
+   bırakıldı — doldurulmadan gönderilirse fatura muhtemelen normal (istisnasız)
+   satış faturası olarak oluşur.
+6. **Müşteri (cari) eşleştirme davranışı** — Dokümana göre `customer.code`
+   verilmezse, bireysel müşteri için `firstName+lastName+taxOrPersonalId`
+   eşleşmesine bakılıyor; Etsy alıcılarının Türk vergi/TC kimlik numarası
+   olmadığından **her sipariş için muhtemelen yeni bir cari açılacak**.
+   Bunun yerine tek bir ortak "Etsy Alıcıları" cari kodu kullanmak isterseniz
+   `invoiceMapper.js`'e `customer.code` eklenmeli — tercihinizi belirtin.
+7. **Kur tipi** — TCMB kurundan hangisinin (`ForexBuying`/`ForexSelling`/...)
    kullanılacağı `TCMB_RATE_TYPE` ile ayarlanabilir; mali müşavirinizle teyit
    edin.
-5. **KDV muafiyet kodu** — Örnek faturanızda "Hizmet İhracı" (302/11/1-a)
+8. **KDV muafiyet kodu** — Örnek faturanızda "Hizmet İhracı" (302/11/1-a)
    kullanılmış; Etsy'den satılan fiziksel ürünler için bunun doğru
    sınıflandırma olup olmadığını (vs. "Mal İhracı") muhasebecinizle teyit edin.
-6. **Çoklu ürünlü / dijital siparişler** — Parser tek örnek üzerinden
+9. **Çoklu ürünlü / dijital siparişler** — Parser tek örnek üzerinden
    yazıldı; birden fazla ürünlü siparişler, kargo adresi olmayan dijital
    ürün siparişleri ve ABD dışı adresler ile ayrıca test edilmeli.
-7. **Mükerrer fatura koruması** — Şu an tekrar deneme sadece e-posta
-   `\Seen` durumuna dayanıyor; aynı sipariş için IMAP dışında bir kayıt
-   (ör. veritabanı) tutulmuyor. Aynı e-postanın yanlışlıkla iki kez
-   işlenmemesi için ek bir idempotency kontrolü (sipariş no bazlı) eklemek
-   isteyebilirsiniz.
+10. **Mükerrer fatura koruması** — Şu an tekrar deneme sadece e-posta
+    `\Seen` durumuna dayanıyor; aynı sipariş için IMAP dışında bir kayıt
+    (ör. veritabanı) tutulmuyor. Aynı e-postanın yanlışlıkla iki kez
+    işlenmemesi için ek bir idempotency kontrolü (sipariş no bazlı) eklemek
+    isteyebilirsiniz.
 
 ## Ortam değişkenleri
 

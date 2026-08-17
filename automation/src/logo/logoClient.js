@@ -2,19 +2,24 @@ const axios = require('axios');
 const config = require('../config');
 
 let cachedToken = null;
+let cachedTenantId = null;
 let tokenExpiresAt = 0;
 
 /**
- * NOTE: the response field name for the token below (`token` /
- * `accessToken` / `data.token`) is a guess based on common API
- * conventions — it has NOT been confirmed against the real
- * developers.isbasi.com docs. Log in once against the test environment
- * and adjust the extraction below to match the real response shape.
+ * Every documented İşbaşı endpoint wraps its response as
+ * { code, message, isError, data }, and every authenticated endpoint
+ * requires both `tenantId` and `Authorization: Bearer {accessToken}`
+ * headers, sourced from the login response. The exact field names inside
+ * `data` for integrationLogin specifically (accessToken vs token,
+ * tenantId vs TenantId, ...) were not shown verbatim in the docs we have
+ * — this tries the conventional names with fallbacks and fails loudly if
+ * none match, so a single real login call will immediately tell us which
+ * one to keep.
  */
 async function login() {
   const now = Date.now();
   if (cachedToken && now < tokenExpiresAt) {
-    return cachedToken;
+    return { token: cachedToken, tenantId: cachedTenantId };
   }
 
   const response = await axios.post(
@@ -31,43 +36,56 @@ async function login() {
     }
   );
 
-  const token =
-    response.data?.token || response.data?.accessToken || response.data?.data?.token;
+  const data = response.data?.data || response.data;
+  const token = data?.accessToken || data?.token || data?.AccessToken;
+  const tenantId = data?.tenantId || data?.TenantId;
 
-  if (!token) {
+  if (!token || !tenantId) {
     throw new Error(
-      `Logo login succeeded but no token field was recognized. Response: ${JSON.stringify(
+      `Logo login succeeded but accessToken/tenantId were not recognized in the response. Response: ${JSON.stringify(
         response.data
       )}`
     );
   }
 
   cachedToken = token;
-  // TODO: use the real expiry from the response if the API returns one.
+  cachedTenantId = tenantId;
+  // TODO: use the real expiry from the response if the API returns one
+  // (docs mention accessToken validity of ~1 day elsewhere in the API).
   tokenExpiresAt = now + 50 * 60 * 1000;
-  return cachedToken;
+  return { token: cachedToken, tenantId: cachedTenantId };
+}
+
+function authHeaders(token, tenantId) {
+  return {
+    ApiKey: config.logo.apiKey,
+    Authorization: `Bearer ${token}`,
+    tenantId,
+    'Content-Type': 'application/json; charset=utf-8',
+    Lang: 'tr-TR',
+  };
 }
 
 /**
- * TODO — NOT YET CONFIRMED: the endpoint path and payload shape here are
- * placeholders. They must be verified against the real API reference at
- * https://developers.isbasi.com/ (log in with your İşbaşı user) before
- * this is used against production data. Likely candidates to check for:
- *   - exact resource path (e.g. /api/v1.0/invoice/... or /salesInvoice/...)
- *   - whether the customer must be created/looked up via a separate
- *     endpoint before invoicing, or can be sent inline
- *   - required vs. optional fields, and their exact names/casing
+ * POST /api/v1.0/invoices/integrationInvoices — confirmed endpoint from
+ * the İşbaşı API reference (Fatura > Kaydetme-Güncelleme). invoiceId: 0
+ * creates a new invoice; a non-zero id updates an existing one.
+ *
+ * Still unconfirmed (not fully detailed in the reference we have and not
+ * live-tested — this sandbox's network policy blocks the test API):
+ *   - the exact field names inside each `salesInvoiceDetails` line item
+ *   - the `eGovernmentInvoice.eGovernmentType` enum value for an export /
+ *     KDV-exemption ("Hizmet İhracı") sales invoice
+ * See invoiceMapper.js for where these are built.
  */
 async function createInvoice(invoicePayload) {
-  const token = await login();
+  const { token, tenantId } = await login();
 
-  const response = await axios.post(`${config.logo.baseUrl}/api/v1.0/invoice/create`, invoicePayload, {
-    headers: {
-      ApiKey: config.logo.apiKey,
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-  });
+  const response = await axios.post(
+    `${config.logo.baseUrl}/api/v1.0/invoices/integrationInvoices`,
+    invoicePayload,
+    { headers: authHeaders(token, tenantId) }
+  );
 
   return response.data;
 }
