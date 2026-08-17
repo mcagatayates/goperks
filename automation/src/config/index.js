@@ -1,3 +1,5 @@
+const path = require('path');
+
 require('dotenv').config();
 
 function required(name) {
@@ -40,5 +42,12 @@ module.exports = {
   poll: {
     intervalMs: Number(process.env.POLL_INTERVAL_MS || 5 * 60 * 1000),
     runOnce: process.env.RUN_ONCE === 'true',
+  },
+  state: {
+    // Local record of Etsy order numbers already invoiced, so a re-read
+    // email (moved back to inbox, marked unread by mistake, etc.) can't
+    // create a duplicate invoice even though IMAP \Seen is also checked.
+    processedOrdersFile:
+      process.env.PROCESSED_ORDERS_FILE || path.join(__dirname, '../../data/processed-orders.json'),
   },
 };

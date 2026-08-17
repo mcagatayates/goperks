@@ -4,6 +4,7 @@ const { parseEtsyOrderEmail } = require('./email/etsyOrderParser');
 const { getUsdToTryRate } = require('./logo/exchangeRate');
 const { mapOrderToInvoice } = require('./logo/invoiceMapper');
 const { createInvoice } = require('./logo/logoClient');
+const { isProcessed, markProcessed } = require('./state/processedOrders');
 
 async function processOnce() {
   console.log(`[${new Date().toISOString()}] Checking mailbox for new Etsy orders...`);
@@ -33,11 +34,18 @@ async function processOnce() {
 
       console.log(`UID ${uid}: parsed order #${order.orderNumber} (${order.items.length} item(s)).`);
 
+      if (isProcessed(order.orderNumber)) {
+        console.warn(`UID ${uid}: order #${order.orderNumber} was already invoiced, skipping.`);
+        await markHandled(client, uid);
+        continue;
+      }
+
       const invoicePayload = mapOrderToInvoice(order, { usdToTryRate });
       const result = await createInvoice(invoicePayload);
 
       console.log(`UID ${uid}: invoice created for order #${order.orderNumber}.`, result);
 
+      markProcessed(order.orderNumber);
       await markHandled(client, uid);
     } catch (err) {
       console.error(`UID ${uid}: failed to process, leaving unread for retry.`, err.message);

@@ -74,7 +74,9 @@ etmeden önce:
    gönderiyor — bu kısım ekran görüntüsüyle doğrulandı. Ancak ekranda görünen
    "GİB Fatura Tipi: Satış" seçeneğinin API'deki `eGovernmentType` sayısal/
    string değeri dokümanda verilmemiş; alan şu an bilinçli olarak boş
-   bırakıldı (gönderilen JSON'da otomatik olarak düşüyor).
+   bırakıldı (gönderilen JSON'da otomatik olarak düşüyor). Web araması bu
+   değeri açığa çıkarmadı — netleştirmek için ya bir test çağrısı, ya da
+   Logo'nun entegrasyon destek hattı (isbasientegrasyon@logo.com.tr) gerekiyor.
 6. ✅ **Müşteri (cari) eşleştirme davranışı** — Teyit edildi: her sipariş
    için yeni bir cari açılacak (ortak/paylaşılan bir "Etsy Alıcıları" kodu
    kullanılmıyor). `customer.code` bilinçli olarak gönderilmiyor.
@@ -93,11 +95,14 @@ etmeden önce:
 9. **Çoklu ürünlü / dijital siparişler** — Parser tek örnek üzerinden
    yazıldı; birden fazla ürünlü siparişler, kargo adresi olmayan dijital
    ürün siparişleri ve ABD dışı adresler ile ayrıca test edilmeli.
-10. **Mükerrer fatura koruması** — Şu an tekrar deneme sadece e-posta
-    `\Seen` durumuna dayanıyor; aynı sipariş için IMAP dışında bir kayıt
-    (ör. veritabanı) tutulmuyor. Aynı e-postanın yanlışlıkla iki kez
-    işlenmemesi için ek bir idempotency kontrolü (sipariş no bazlı) eklemek
-    isteyebilirsiniz.
+10. ✅ **Mükerrer fatura koruması** — `src/state/processedOrders.js`,
+    faturası kesilen Etsy sipariş numaralarını yerel bir JSON dosyasında
+    (`PROCESSED_ORDERS_FILE`, varsayılan `automation/data/processed-orders.json`)
+    tutuyor. IMAP `\Seen` durumundan bağımsız olarak, aynı sipariş numarası
+    tekrar görülürse fatura ikinci kez oluşturulmuyor. Bu dosya git'e
+    commit edilmez (`.gitignore`); üretimde kalıcı bir diske (ör. mount
+    edilmiş bir volume) yazıldığından emin olun, aksi halde konteyner
+    yeniden başladığında sıfırlanır.
 
 ## Ortam değişkenleri
 
