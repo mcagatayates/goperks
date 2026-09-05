@@ -1,82 +1,122 @@
-# gatsby-contentful-starter
+# HeyTable
 
-Gatsby [Contentful](https://www.contentful.com) starter for creating a blog
+An AI reservations concierge for restaurants — the restaurant-industry
+counterpart to hotel AI concierge platforms like HeyHotel.ai. Guests book,
+change, or cancel a table over web chat or WhatsApp; the AI checks live table
+availability, confirms instantly, and suggests the chef's specials. Restaurant
+staff get a dashboard to see and manage every reservation and conversation.
 
-![The index page of the starter blog](https://rawgit.com/contentful-userland/gatsby-contentful-starter/master/screenshot.jpg "The index page of the starter blog")
+This is a working MVP prototype, not a finished product: single-tenant demo
+data, one seeded restaurant, no auth on the admin dashboard, SQLite instead of
+a hosted database. It's meant to prove out the core product (AI-driven
+reservations, tool-calling against real availability data, a pluggable channel
+layer for web + WhatsApp) so it can be iterated on.
 
-Static sites are scalable, secure and have very little required maintenance. They come with a drawback though. Not everybody feels good editing files, building a project and uploading it somewhere. This is where Contentful comes into play.
+## Stack
 
-With Contentful and Gatsby you can connect your favorite static site generator with an API that provides an easy to use interface for people writing content and automate the publishing using services like [Travis CI](https://travis-ci.org/) or [Netlify](https://www.netlify.com/).
-
-## Features
-
-* Simple content model and structure. Easy to adjust to your needs.
-* Contentful integration using our [Sync API](https://www.contentful.com/developers/docs/references/content-delivery-api/#/reference/synchronization/initial-synchronization-of-entries-of-a-specific-content-type)
-* Using our [Delivery API](https://www.contentful.com/developers/docs/references/content-delivery-api/).
-* Responsive/adaptive images via [gatsby-image](https://www.gatsbyjs.org/packages/gatsby-image/)
-
-## Contribution
-
-This project is part of [contentful-userland](https://github.com/contentful-userland) which means that we’re always open to contributions **and you can be part of userland and shape the project yourself after your first merged pull request**. You can learn more about how contentful userland is organized by visiting [our about repository](https://github.com/contentful-userland/about).
-
-## Requirements
-
-To use this project you have to have a Contentful account. If you don't have one yet you can register at [www.contentful.com/sign-up](https://www.contentful.com/sign-up/).
+- **Next.js 16** (App Router, TypeScript, Tailwind CSS)
+- **Prisma + SQLite** for local dev (schema is Postgres-compatible — see
+  below to switch)
+- **Claude API** (`@anthropic-ai/sdk`) with tool use for the reservations agent
 
 ## Getting started
 
-Install [Yarn](https://yarnpkg.com/en/docs/install) (if you haven't already).
+```bash
+npm install
+cp .env.example .env
+# then edit .env and set ANTHROPIC_API_KEY
 
-### Get the source code and install dependencies.
-
-```
-$ git clone git@github.com:contentful-userland/gatsby-contentful-starter.git
-$ yarn install
-```
-
-Or use the [Gatsby CLI](https://www.npmjs.com/package/gatsby-cli).
-
-```
-$ gatsby new contentful-starter https://github.com/contentful-userland/gatsby-contentful-starter
+npm run db:push   # create the SQLite schema
+npm run db:seed    # seed the demo restaurant "Masa19"
+npm run dev
 ```
 
-### Set up of the needed content model and create a configuration file
+Visit:
 
-This project comes with a Contentful setup command `yarn run setup`.
+- `http://localhost:3000` — marketing landing page
+- `http://localhost:3000/r/masa19` — the demo restaurant's public page, with
+  the AI chat widget in the corner
+- `http://localhost:3000/admin/masa19` — restaurant staff dashboard
+  (reservations, menu & specials, conversation transcripts)
 
-![Command line dialog of the yarn run setup command](https://rawgit.com/contentful-userland/gatsby-contentful-starter/master/setup.jpg "Command line dialog of the yarn run setup command")
+Without `ANTHROPIC_API_KEY` set, every other part of the app works (pages,
+reservation CRUD, dashboard) but the chat widget will return a clear error
+instead of a reply.
 
-This command will ask you for a space ID, and access tokens for the Contentful Management and Delivery API and then import the needed content model into the space you define and write a config file (`./contentful.json`).
+## How the agent works
 
-`yarn run setup` automates that for you but if you want to do it yourself rename `.contentful.json.sample` to `.contentful.json` and add your configuration in this file.
+`lib/agent.ts` runs a Claude tool-use loop against six tools backed directly
+by the database (`lib/reservations.ts`, `lib/prisma.ts`):
 
-## Crucial Commands
+- `check_availability`, `create_reservation`, `modify_reservation`,
+  `cancel_reservation`, `find_reservation`, `get_specials`,
+  `get_restaurant_info`
 
-This project comes with a few handy commands for linting and code fixing. The most important ones are the ones to develop and ship code. You can find the most important commands below.
+The agent never invents availability or reservation state — every claim it
+makes is backed by a tool call against the live database, so it can't
+double-book a table or promise a slot that doesn't exist.
 
-### `yarn run dev`
+Availability is slot-based: each reservation occupies a table for
+`reservationDurationMinutes` (default 90) starting at the requested time;
+`findAvailableTables` filters tables by capacity and rejects any that overlap
+an existing `pending`/`confirmed` reservation.
 
-Run in the project locally.
+## Channels
 
-### `yarn run build`
+The same agent logic drives two channels today:
 
-Run a production build into `./public`. The result is ready to be put on any static hosting you prefer.
+- **Web chat** — `POST /api/chat`, used by the `ChatWidget` component embedded
+  on the restaurant page.
+- **WhatsApp** — `POST /api/webhooks/whatsapp`. This is fully wired up but
+  ships in "stubbed send" mode: without `WHATSAPP_PHONE_NUMBER_ID` /
+  `WHATSAPP_ACCESS_TOKEN` set, replies are logged to the server console
+  instead of actually sent over WhatsApp. See `lib/channels/whatsapp.ts` for
+  the three steps to go live with a real WhatsApp Business number. The
+  webhook is currently single-tenant (routes every message to the restaurant
+  named by `WHATSAPP_RESTAURANT_SLUG`) — a real multi-restaurant deployment
+  would map the inbound WhatsApp phone number ID to a restaurant instead.
 
-### `yarn run deploy`
+Voice (phone) is not implemented in this MVP — see "What's next" below.
 
-Run a production build into `./public` and publish the site to GitHub pages.
+## Switching SQLite → Postgres
 
-### `yarn run cleanup-repository`
+The schema (`prisma/schema.prisma`) is already Postgres-compatible; SQLite was
+chosen only so this MVP runs with zero external services. To move to
+Postgres:
 
-Removes all dependencies, scripts and data from the installation script.
+1. Change `provider = "sqlite"` to `provider = "postgresql"` in
+   `prisma/schema.prisma`.
+2. Point `DATABASE_URL` at your Postgres instance.
+3. `npx prisma db push` (or set up migrations with `prisma migrate dev`).
 
-## Roadmap
+## Project structure
 
-- [x] [make the starter completely responsive](https://github.com/contentful-userland/gatsby-contentful-starter/issues/2)
-- [ ] [include tags](https://github.com/contentful-userland/gatsby-contentful-starter/issues/3)
-- [x] [support traced placeholders](https://github.com/contentful-userland/gatsby-contentful-starter/issues/4)
-- [ ] [add i18n](https://github.com/contentful-userland/gatsby-contentful-starter/issues/6)
+```
+app/
+  page.tsx                    marketing landing page
+  r/[slug]/page.tsx           public restaurant page + chat widget
+  admin/[slug]/page.tsx       staff dashboard
+  api/chat/route.ts           web chat endpoint
+  api/webhooks/whatsapp/      WhatsApp Cloud API webhook
+  api/restaurants/[slug]/     reservations / sessions / restaurant data APIs
+components/
+  ChatWidget.tsx              floating web chat widget (client component)
+  AdminDashboard.tsx          staff dashboard UI (client component)
+lib/
+  agent.ts                    Claude tool-use loop + system prompt
+  reservations.ts             availability + reservation CRUD (core logic)
+  channels/whatsapp.ts         WhatsApp Cloud API adapter
+  prisma.ts, time.ts, types.ts
+prisma/
+  schema.prisma, seed.ts
+```
 
-## Other resources
+## What's next (not in this MVP)
 
-- Tutorial video series ["Building a blazing fast website with GatsbyJS and Contentful"](https://www.youtube.com/watch?v=Ek4o40w1tH4&list=PL8KiuH6vpACV-F7jXribe4YveGBhBeG9A) by @Khaledgarbaya
+- Voice/phone channel (would need a telephony + speech-to-text/text-to-speech
+  provider, e.g. Twilio + a realtime STT/TTS pipeline)
+- Multi-tenant restaurant onboarding flow + auth on the admin dashboard
+- Real POS/reservation-system integrations (Toast, Square, OpenTable, etc.)
+- SMS/email confirmation messages (currently confirmation is only the chat
+  reply itself)
+- Waitlist handling when a requested slot is fully booked

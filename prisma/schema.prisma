@@ -1,0 +1,121 @@
+// Prisma schema for the restaurant AI reservation MVP.
+// Uses SQLite for zero-config local development. To move to production,
+// switch the datasource below to "postgresql" and set DATABASE_URL to a
+// Postgres connection string — the models are already Postgres-compatible
+// (the only SQLite-specific concession is that enums are modeled as plain
+// strings, since SQLite has no native enum type).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Restaurant {
+  id                        String   @id @default(cuid())
+  slug                      String   @unique
+  name                      String
+  description               String
+  address                   String
+  phone                     String
+  timezone                  String   @default("Europe/Istanbul")
+  openTime                  String // "12:00"
+  closeTime                 String // "23:00"
+  reservationDurationMinutes Int     @default(90)
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  tables    RestaurantTable[]
+  menuItems MenuItem[]
+  reservations Reservation[]
+  sessions  ConversationSession[]
+}
+
+model RestaurantTable {
+  id           String   @id @default(cuid())
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
+  name         String
+  capacity     Int
+  isActive     Boolean  @default(true)
+
+  reservations Reservation[]
+
+  @@index([restaurantId])
+}
+
+model MenuItem {
+  id           String   @id @default(cuid())
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
+  name         String
+  description  String
+  price        Float
+  category     String // e.g. "starter", "main", "dessert", "drink"
+  isSpecial    Boolean  @default(false)
+  specialDate  DateTime? // only set when isSpecial - the day this special applies
+  isAvailable  Boolean  @default(true)
+
+  @@index([restaurantId])
+}
+
+// status: "pending" | "confirmed" | "cancelled" | "completed" | "no_show"
+// channel: "web" | "whatsapp" | "voice"
+model Reservation {
+  id           String   @id @default(cuid())
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
+  tableId      String?
+  table        RestaurantTable? @relation(fields: [tableId], references: [id])
+  sessionId    String?
+  session      ConversationSession? @relation(fields: [sessionId], references: [id])
+
+  customerName  String
+  customerPhone String
+  customerEmail String?
+  partySize     Int
+  startsAt      DateTime
+  durationMinutes Int    @default(90)
+  status        String  @default("pending")
+  channel       String  @default("web")
+  notes         String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([restaurantId, startsAt])
+  @@index([tableId])
+}
+
+// channel: "web" | "whatsapp" | "voice"
+model ConversationSession {
+  id           String   @id @default(cuid())
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
+  channel      String   @default("web")
+  externalId   String? // phone number / WhatsApp wa_id for non-web channels
+  customerName String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  messages     ConversationMessage[]
+  reservations Reservation[]
+
+  @@index([restaurantId])
+  @@index([externalId])
+}
+
+// role: "user" | "assistant"
+model ConversationMessage {
+  id        String   @id @default(cuid())
+  sessionId String
+  session   ConversationSession @relation(fields: [sessionId], references: [id])
+  role      String
+  content   String
+  createdAt DateTime @default(now())
+
+  @@index([sessionId])
+}
