@@ -6,6 +6,10 @@ import {
   rangesOverlap,
   timeStringToMinutes,
 } from "@/lib/time";
+import {
+  notifyReservationCancelled,
+  notifyReservationConfirmed,
+} from "@/lib/notifications/reservation-notifications";
 import type { Channel } from "@/lib/types";
 
 export class ReservationError extends Error {}
@@ -153,6 +157,19 @@ export async function createReservation(params: {
     include: { table: true },
   });
 
+  try {
+    await notifyReservationConfirmed({
+      restaurantName: restaurant.name,
+      customerName: reservation.customerName,
+      customerPhone: reservation.customerPhone,
+      customerEmail: reservation.customerEmail,
+      startsAt: reservation.startsAt,
+      partySize: reservation.partySize,
+    });
+  } catch (err) {
+    console.error("Reservation confirmation notification failed", err);
+  }
+
   return { reservation, restaurant };
 }
 
@@ -213,13 +230,28 @@ export async function modifyReservation(params: {
 export async function cancelReservation(reservationId: string) {
   const existing = await prisma.reservation.findUnique({
     where: { id: reservationId },
+    include: { restaurant: true },
   });
   if (!existing) throw new ReservationError("Rezervasyon bulunamadı.");
 
-  return prisma.reservation.update({
+  const cancelled = await prisma.reservation.update({
     where: { id: reservationId },
     data: { status: "cancelled" },
   });
+
+  try {
+    await notifyReservationCancelled({
+      restaurantName: existing.restaurant.name,
+      customerName: existing.customerName,
+      customerPhone: existing.customerPhone,
+      customerEmail: existing.customerEmail,
+      startsAt: existing.startsAt,
+    });
+  } catch (err) {
+    console.error("Reservation cancellation notification failed", err);
+  }
+
+  return cancelled;
 }
 
 export async function findReservationForCustomer(params: {

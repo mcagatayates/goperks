@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { RESERVATION_STATUSES } from "@/lib/types";
 import { assertRestaurantAccess } from "@/lib/auth";
+import { notifyReservationCancelled } from "@/lib/notifications/reservation-notifications";
 
 export async function PATCH(
   request: Request,
@@ -24,8 +25,22 @@ export async function PATCH(
   const reservation = await prisma.reservation.update({
     where: { id },
     data: { status },
-    include: { table: true },
+    include: { table: true, restaurant: true },
   });
+
+  if (status === "cancelled") {
+    try {
+      await notifyReservationCancelled({
+        restaurantName: reservation.restaurant.name,
+        customerName: reservation.customerName,
+        customerPhone: reservation.customerPhone,
+        customerEmail: reservation.customerEmail,
+        startsAt: reservation.startsAt,
+      });
+    } catch (err) {
+      console.error("Reservation cancellation notification failed", err);
+    }
+  }
 
   return NextResponse.json({ reservation });
 }
