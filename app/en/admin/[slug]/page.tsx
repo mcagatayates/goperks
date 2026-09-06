@@ -2,8 +2,8 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import AdminDashboard from "@/components/AdminDashboard";
 
-export default async function AdminPageTr(
-  props: PageProps<"/tr/admin/[slug]">
+export default async function AdminPageEn(
+  props: PageProps<"/en/admin/[slug]">
 ) {
   const { slug } = await props.params;
 
@@ -11,6 +11,6 @@ export default async function AdminPageTr(
   if (!restaurant) notFound();
 
   return (
-    <AdminDashboard slug={slug} restaurantName={restaurant.name} locale="tr" />
+    <AdminDashboard slug={slug} restaurantName={restaurant.name} locale="en" />
   );
 }

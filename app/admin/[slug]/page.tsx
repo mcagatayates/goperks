@@ -9,6 +9,6 @@ export default async function AdminPage(props: PageProps<"/admin/[slug]">) {
   if (!restaurant) notFound();
 
   return (
-    <AdminDashboard slug={slug} restaurantName={restaurant.name} locale="en" />
+    <AdminDashboard slug={slug} restaurantName={restaurant.name} locale="tr" />
   );
 }

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import ChatWidget from "@/components/ChatWidget";
-import { dictionaries, otherLocale, type Locale } from "@/lib/i18n";
+import { dictionaries, localePrefix, otherLocale, type Locale } from "@/lib/i18n";
 
 type MenuItem = {
   id: string;
@@ -32,8 +32,7 @@ export default function RestaurantPageContent({
   const specials = restaurant.menuItems.filter((m) => m.isSpecial);
   const menu = restaurant.menuItems.filter((m) => !m.isSpecial);
   const other = otherLocale(locale);
-  const otherHref =
-    other === "en" ? `/r/${restaurant.slug}` : `/tr/r/${restaurant.slug}`;
+  const otherHref = `${localePrefix(other)}/r/${restaurant.slug}`;
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-3xl flex-col gap-10 px-6 py-16">

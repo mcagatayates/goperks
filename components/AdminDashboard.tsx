@@ -7,7 +7,7 @@ import {
   type FormEvent,
   type ReactNode,
 } from "react";
-import { dictionaries, otherLocale, type Locale } from "@/lib/i18n";
+import { dictionaries, localePrefix, otherLocale, type Locale } from "@/lib/i18n";
 import type { Channel, ReservationStatus } from "@/lib/types";
 import {
   IconCalendar,
@@ -98,7 +98,7 @@ export default function AdminDashboard({
   >("reservations");
 
   const other = otherLocale(locale);
-  const otherHref = other === "en" ? `/admin/${slug}` : `/tr/admin/${slug}`;
+  const otherHref = `${localePrefix(other)}/admin/${slug}`;
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-6 px-6 py-12">

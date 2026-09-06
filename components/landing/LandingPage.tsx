@@ -1,6 +1,6 @@
 import Link from "next/link";
 import PhoneMockup from "@/components/landing/PhoneMockup";
-import { dictionaries, otherLocale, type Locale } from "@/lib/i18n";
+import { dictionaries, localePrefix, otherLocale, type Locale } from "@/lib/i18n";
 import {
   IconArrowRight,
   IconCalendar,
@@ -25,15 +25,21 @@ const FEATURE_ICONS = [
 export default function LandingPage({ locale }: { locale: Locale }) {
   const t = dictionaries[locale].landing;
   const nav = dictionaries[locale].nav;
-  const prefix = locale === "en" ? "" : `/${locale}`;
+  const prefix = localePrefix(locale);
   const other = otherLocale(locale);
-  const otherPrefix = other === "en" ? "" : `/${other}`;
+  const otherPrefix = localePrefix(other);
 
   return (
     <main className="flex min-h-screen flex-col">
       <nav className="mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-6">
         <span className="font-display text-lg tracking-tight">HeyTable</span>
         <div className="flex items-center gap-2">
+          <Link
+            href="#pricing"
+            className="hidden rounded-full px-3 py-2 text-xs font-medium text-muted transition hover:text-foreground sm:inline-block"
+          >
+            {nav.pricing}
+          </Link>
           <Link
             href={`${prefix}/r/masa19`}
             className="rounded-full bg-foreground px-4 py-2 text-xs font-medium text-background transition hover:scale-[1.02]"
@@ -173,6 +179,66 @@ export default function LandingPage({ locale }: { locale: Locale }) {
             ))}
           </div>
         </div>
+      </section>
+
+      <section id="pricing" className="mx-auto w-full max-w-5xl px-6 pb-24">
+        <div className="mx-auto max-w-lg text-center">
+          <h2 className="font-display text-3xl tracking-tight">
+            {t.pricingTitle}
+          </h2>
+          <p className="mt-3 text-muted">{t.pricingSubtitle}</p>
+        </div>
+
+        <div className="mt-12 grid gap-6 sm:grid-cols-3">
+          {t.pricingTiers.map((tier) => (
+            <div
+              key={tier.name}
+              className={`flex flex-col rounded-2xl p-6 ${
+                tier.highlighted
+                  ? "border-2 border-accent shadow-[0_20px_50px_-20px_rgba(181,80,46,0.35)] sm:-translate-y-2"
+                  : "border border-border"
+              }`}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="font-semibold">{tier.name}</h3>
+                {"badge" in tier && tier.badge && (
+                  <span className="rounded-full bg-accent-soft px-2.5 py-1 text-xs font-medium text-accent">
+                    {tier.badge}
+                  </span>
+                )}
+              </div>
+              <p className="mt-1 text-sm text-muted">{tier.description}</p>
+              <p className="font-display mt-5 text-3xl tracking-tight">
+                {tier.price}
+                <span className="text-base font-sans text-muted">
+                  {tier.period}
+                </span>
+              </p>
+              <ul className="mt-6 flex flex-1 flex-col gap-2.5 text-sm">
+                {tier.features.map((f) => (
+                  <li key={f} className="flex items-start gap-2">
+                    <IconCheck className="mt-0.5 h-4 w-4 flex-none text-accent" />
+                    <span>{f}</span>
+                  </li>
+                ))}
+              </ul>
+              <Link
+                href={`${prefix}/admin/masa19`}
+                className={`mt-6 rounded-full px-5 py-2.5 text-center text-sm font-medium transition hover:scale-[1.02] ${
+                  tier.highlighted
+                    ? "bg-foreground text-background"
+                    : "border border-border hover:border-accent/50 hover:text-accent"
+                }`}
+              >
+                {tier.cta}
+              </Link>
+            </div>
+          ))}
+        </div>
+
+        <p className="mt-6 text-center text-xs text-muted">
+          {t.pricingOverage} {t.pricingBillingNote}
+        </p>
       </section>
 
       <section className="mx-auto flex w-full max-w-5xl flex-col items-center gap-6 px-6 pb-28 text-center">

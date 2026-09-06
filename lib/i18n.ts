@@ -3,8 +3,17 @@ import type { Channel, ReservationStatus } from "@/lib/types";
 export const locales = ["en", "tr"] as const;
 export type Locale = (typeof locales)[number];
 
+// Turkish serves at bare paths ("/", "/r/[slug]", "/admin/[slug]") since
+// Turkey is the primary market; English lives under "/en" instead of the
+// other way around.
+export const defaultLocale: Locale = "tr";
+
 export function otherLocale(locale: Locale): Locale {
   return locale === "en" ? "tr" : "en";
+}
+
+export function localePrefix(locale: Locale): string {
+  return locale === defaultLocale ? "" : `/${locale}`;
 }
 
 // English is the source of truth for shape; the Turkish dictionary is typed
@@ -12,6 +21,7 @@ export function otherLocale(locale: Locale): Locale {
 // silent fallback to English text at runtime.
 const en = {
   nav: {
+    pricing: "Pricing",
     liveDemo: "Live demo",
     dashboard: "Dashboard",
   },
@@ -75,6 +85,56 @@ const en = {
       { label: "Web chat", status: "Live", isLive: true },
       { label: "WhatsApp", status: "Live", isLive: true },
       { label: "Voice / phone", status: "Coming soon", isLive: false },
+    ],
+    pricingTitle: "Simple, transparent pricing",
+    pricingSubtitle:
+      "Priced for an independent restaurant's budget, not an enterprise one. Every plan includes the AI concierge, live availability, and the staff dashboard.",
+    pricingBillingNote: "Prices in Turkish Lira, billed monthly.",
+    pricingOverage: "Extra conversations beyond your plan: ₺4 each.",
+    pricingTiers: [
+      {
+        name: "Starter",
+        price: "₺1.490",
+        period: "/mo",
+        description: "For a single restaurant getting started.",
+        features: [
+          "Web chat concierge",
+          "Up to 200 AI conversations/mo",
+          "Reservations, tables & menu management",
+          "Full conversation history",
+        ],
+        cta: "Get started",
+        highlighted: false,
+      },
+      {
+        name: "Growth",
+        price: "₺3.990",
+        period: "/mo",
+        description: "For restaurants ready to add WhatsApp.",
+        badge: "Most popular",
+        features: [
+          "Everything in Starter",
+          "WhatsApp channel",
+          "Up to 800 AI conversations/mo",
+          "Priority support",
+        ],
+        cta: "Get started",
+        highlighted: true,
+      },
+      {
+        name: "Enterprise",
+        price: "Custom",
+        period: "",
+        description: "For multi-location groups and custom needs.",
+        features: [
+          "Everything in Growth",
+          "Multiple locations",
+          "Custom POS/reservation integrations",
+          "Dedicated account manager",
+        ],
+        cta: "Contact us",
+        highlighted: false,
+      },
     ],
     closingTitle: "See it running, not just described",
     closingBody:
@@ -210,6 +270,7 @@ const en = {
 
 const tr: typeof en = {
   nav: {
+    pricing: "Fiyatlandırma",
     liveDemo: "Canlı demo",
     dashboard: "Panel",
   },
@@ -273,6 +334,56 @@ const tr: typeof en = {
       { label: "Web sohbet", status: "Canlı", isLive: true },
       { label: "WhatsApp", status: "Canlı", isLive: true },
       { label: "Sesli / telefon", status: "Yakında", isLive: false },
+    ],
+    pricingTitle: "Basit, şeffaf fiyatlandırma",
+    pricingSubtitle:
+      "Kurumsal değil, bağımsız bir restoranın bütçesine göre fiyatlandırıldı. Her pakette AI resepsiyonist, gerçek zamanlı müsaitlik ve yönetim paneli var.",
+    pricingBillingNote: "Fiyatlar Türk Lirası ile, aylık faturalandırılır.",
+    pricingOverage: "Paket üzeri her konuşma: ₺4.",
+    pricingTiers: [
+      {
+        name: "Başlangıç",
+        price: "₺1.490",
+        period: "/ay",
+        description: "Yeni başlayan tek bir restoran için.",
+        features: [
+          "Web sohbet resepsiyonisti",
+          "Ayda 200 AI konuşmasına kadar",
+          "Rezervasyon, masa ve menü yönetimi",
+          "Tam konuşma geçmişi",
+        ],
+        cta: "Hemen başla",
+        highlighted: false,
+      },
+      {
+        name: "Büyüme",
+        price: "₺3.990",
+        period: "/ay",
+        description: "WhatsApp'ı eklemeye hazır restoranlar için.",
+        badge: "En popüler",
+        features: [
+          "Başlangıç'taki her şey",
+          "WhatsApp kanalı",
+          "Ayda 800 AI konuşmasına kadar",
+          "Öncelikli destek",
+        ],
+        cta: "Hemen başla",
+        highlighted: true,
+      },
+      {
+        name: "Kurumsal",
+        price: "Özel",
+        period: "",
+        description: "Çoklu şube zincirleri ve özel ihtiyaçlar için.",
+        features: [
+          "Büyüme'deki her şey",
+          "Çoklu şube desteği",
+          "Özel POS/rezervasyon entegrasyonları",
+          "Özel hesap yöneticisi",
+        ],
+        cta: "Bize ulaşın",
+        highlighted: false,
+      },
     ],
     closingTitle: "Anlatılan değil, çalışan haliyle görün",
     closingBody:

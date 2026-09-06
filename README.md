@@ -61,18 +61,26 @@ Without `ANTHROPIC_API_KEY` set, every other part of the app works (pages,
 reservation CRUD, dashboard) but the chat widget will return a clear error
 instead of a reply.
 
-Every page above also has a Turkish counterpart at the same paths under
-`/tr` (e.g. `/tr`, `/tr/r/masa19`, `/tr/admin/masa19`), with an EN/TR link in
+Every page above also has an English counterpart at the same paths under
+`/en` (e.g. `/en`, `/en/r/masa19`, `/en/admin/masa19`), with an EN/TR link in
 each page's header to switch between them. See "Localization" below.
 
 ## Localization
 
+Turkish is the default/primary locale — it serves at bare paths (`/`,
+`/r/[slug]`, `/admin/[slug]`) since Turkey is the target market; English
+lives under `/en` instead of the more common other-way-around convention.
+`lib/i18n.ts`'s `defaultLocale` and `localePrefix()` are the single place
+this is decided — every link in the app computes its href through
+`localePrefix()` rather than hardcoding which locale is bare.
+
 `lib/i18n.ts` holds the full UI dictionary for both locales. The English
-dictionary (`en`) is the source of truth; the Turkish one (`tr`) is typed as
-`typeof en`, so a missing translation key is a compile error, not a silent
-fallback to English text. Covers the landing page, the restaurant page, the
-chat widget, and the admin dashboard (including reservation status and
-channel display labels).
+dictionary (`en`) is the source of truth for shape (this is independent of
+which locale is the *default route* — see above); the Turkish one (`tr`) is
+typed as `typeof en`, so a missing translation key is a compile error, not a
+silent fallback to English text. Covers the landing page, the restaurant
+page, the chat widget, and the admin dashboard (including reservation
+status and channel display labels).
 
 This only localizes the app's own UI chrome — not restaurant-specific
 content (name, description, menu item names/descriptions), which is stored
@@ -81,10 +89,10 @@ need any of this: it already replies in whichever language the guest writes
 in, by design of its system prompt.
 
 Routes are duplicated per locale rather than using a `[locale]` dynamic
-segment, to keep the existing English routes untouched:
+segment:
 
-- `/`, `/r/[slug]`, `/admin/[slug]` — English (default)
-- `/tr`, `/tr/r/[slug]`, `/tr/admin/[slug]` — Turkish
+- `/`, `/r/[slug]`, `/admin/[slug]` — Turkish (default)
+- `/en`, `/en/r/[slug]`, `/en/admin/[slug]` — English
 
 Both variants render the same shared components (`LandingPage`,
 `RestaurantPageContent`, `AdminDashboard`, `ChatWidget`) with a `locale`
@@ -192,12 +200,12 @@ Postgres:
 
 ```
 app/
-  page.tsx                    marketing landing page (en)
-  tr/page.tsx                 marketing landing page (tr)
-  r/[slug]/page.tsx           public restaurant page + chat widget (en)
-  tr/r/[slug]/page.tsx        public restaurant page + chat widget (tr)
-  admin/[slug]/page.tsx       staff dashboard (en)
-  tr/admin/[slug]/page.tsx    staff dashboard (tr)
+  page.tsx                    marketing landing page (tr, default)
+  en/page.tsx                 marketing landing page (en)
+  r/[slug]/page.tsx           public restaurant page + chat widget (tr)
+  en/r/[slug]/page.tsx        public restaurant page + chat widget (en)
+  admin/[slug]/page.tsx       staff dashboard (tr)
+  en/admin/[slug]/page.tsx    staff dashboard (en)
   api/chat/route.ts           web chat endpoint
   api/webhooks/whatsapp/      WhatsApp Cloud API webhook (multi-tenant)
   api/restaurants/[slug]/     reservations / tables / menu-items / sessions
@@ -219,6 +227,51 @@ lib/
 prisma/
   schema.prisma, seed.ts
 ```
+
+## Pricing rationale
+
+The landing page's pricing section isn't arbitrary — here's the cost model
+behind it, so it can be revisited as real usage data comes in.
+
+**Claude API cost per conversation.** Measured directly from the actual
+`tools` array + system prompt in `lib/agent.ts` (not estimated): the tool
+schemas serialize to ~730 tokens and the system prompt to ~250 tokens, so
+every API call carries a fixed ~980-token overhead (the Anthropic API is
+stateless — the full system+tools+history is resent on every call; this
+codebase doesn't use prompt caching yet, see below). Modeling a typical
+2-user-turn booking flow (check availability → collect name/phone → create
+reservation → confirm and mention a special — 4 API calls total) at Claude
+Sonnet 5 rates ($2/$10 per MTok input/output):
+
+- ~4,500 input tokens + ~275 output tokens per conversation
+- ≈ **$0.012 per conversation** (roughly $0.01 simple, $0.03-0.04 for a
+  longer back-and-forth or a modify/cancel flow)
+
+**Prompt caching would cut this further** (not yet implemented): caching
+the ~980-token system+tools prefix drops its repeat-call cost by ~90%
+(cache reads are priced at 0.1x). Worth adding once conversation volume
+justifies the engineering time.
+
+**WhatsApp messaging cost.** Under Meta's current pricing, guest-initiated
+("service") replies within the 24-hour window are free (plus 1,000 free
+service conversations/month per WhatsApp Business Account regardless).
+**This changes October 1, 2026**, when Meta starts charging per business
+message — including service replies. Using utility-tier rates as a stand-in
+for the not-yet-published post-change service rate (~$0.004-$0.01/message
+range in most markets) and ~2-3 assistant replies per conversation, that
+adds roughly **$0.01-0.03 per WhatsApp conversation** once the change takes
+effect. Web chat conversations are unaffected — there's no per-message fee.
+
+**Blended planning number:** ~₺1 (≈ $0.03) per conversation, covering the
+post-October-2026 WhatsApp world with margin, used as the basis for the
+plan conversation caps and the overage rate below. Infra (hosting +
+Postgres) and payment processing are amortized across all restaurants
+rather than priced per-conversation, and aren't broken out here.
+
+Tier caps and overage pricing were sized against this cost with headroom
+for a healthy SaaS margin — not cost-plus pricing. Revisit both the caps
+and the caching decision once real conversation volume and the finalized
+post-October WhatsApp service rate are known.
 
 ## What's next (not in this MVP)
 

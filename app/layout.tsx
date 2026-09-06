@@ -21,15 +21,15 @@ const fraunces = Fraunces({
 });
 
 export const metadata: Metadata = {
-  title: "HeyTable — AI Reservations Concierge for Restaurants",
+  title: "HeyTable — Restoranlar için AI Rezervasyon Asistanı",
   description:
-    "HeyTable is an end-to-end AI concierge for restaurants: instant table reservations over web chat and WhatsApp, 24/7.",
+    "HeyTable, restoranlar için uçtan uca bir AI resepsiyonisti: web sohbet ve WhatsApp üzerinden 7/24 anında masa rezervasyonu.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
-      lang="en"
+      lang="tr"
       className={`${geistSans.variable} ${geistMono.variable} ${fraunces.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>

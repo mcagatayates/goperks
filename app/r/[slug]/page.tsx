@@ -12,5 +12,5 @@ export default async function RestaurantPage(props: PageProps<"/r/[slug]">) {
 
   if (!restaurant) notFound();
 
-  return <RestaurantPageContent restaurant={restaurant} locale="en" />;
+  return <RestaurantPageContent restaurant={restaurant} locale="tr" />;
 }
