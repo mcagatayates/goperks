@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { RESERVATION_STATUSES } from "@/lib/types";
 import { assertRestaurantAccess } from "@/lib/auth";
 import { notifyReservationCancelled } from "@/lib/notifications/reservation-notifications";
+import { notifyPosWebhook } from "@/lib/pos";
 
 export async function PATCH(
   request: Request,
@@ -40,6 +41,16 @@ export async function PATCH(
     } catch (err) {
       console.error("Reservation cancellation notification failed", err);
     }
+  }
+
+  try {
+    await notifyPosWebhook(
+      reservation.restaurant,
+      status === "cancelled" ? "reservation.cancelled" : "reservation.updated",
+      reservation
+    );
+  } catch (err) {
+    console.error("POS webhook failed", err);
   }
 
   return NextResponse.json({ reservation });

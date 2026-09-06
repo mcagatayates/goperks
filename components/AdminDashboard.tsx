@@ -16,6 +16,7 @@ import {
   IconPlus,
 } from "@/components/icons";
 import WhatsAppConnect from "@/components/WhatsAppConnect";
+import PosIntegration from "@/components/PosIntegration";
 
 type Table = { id: string; name: string; capacity: number; isActive: boolean };
 type MenuItem = {
@@ -172,7 +173,12 @@ export default function AdminDashboard({
       {tab === "reservations" && <ReservationsTab slug={slug} />}
       {tab === "menu" && <MenuTab slug={slug} />}
       {tab === "conversations" && <ConversationsTab slug={slug} />}
-      {tab === "settings" && <WhatsAppConnect slug={slug} />}
+      {tab === "settings" && (
+        <div className="flex flex-col gap-6">
+          <WhatsAppConnect slug={slug} />
+          <PosIntegration slug={slug} />
+        </div>
+      )}
     </main>
   );
 }

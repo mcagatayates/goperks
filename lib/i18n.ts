@@ -292,6 +292,26 @@ export const dictionary = {
         "Meta, işletme hesabı bilgilerini döndürmedi — lütfen tekrar deneyin.",
       genericError: "WhatsApp bağlantısı tamamlanamadı.",
     },
+    pos: {
+      title: "POS / rezervasyon sistemi entegrasyonu",
+      description:
+        "Kendi POS'unuzu veya rezervasyon sisteminizi bağlamak için API anahtarını ve webhook URL'sini kullanın.",
+      apiKeyLabel: "API anahtarı",
+      apiKeyHint:
+        "POS'unuzun rezervasyonları çekmesi için Authorization: Bearer <anahtar> başlığında kullanın.",
+      generateApiKey: "Anahtar oluştur",
+      regenerateApiKey: "Anahtarı yenile",
+      copy: "Kopyala",
+      copied: "Kopyalandı",
+      webhookUrlLabel: "Webhook URL'si",
+      webhookUrlPlaceholder: "https://sizin-pos-sisteminiz.com/webhooks/heytable",
+      webhookSecretLabel: "Webhook imza anahtarı",
+      webhookSecretHint:
+        "Gelen isteklerin gerçekten HeyTable'dan geldiğini doğrulamak için X-HeyTable-Signature başlığını bu anahtarla HMAC-SHA256 olarak karşılaştırın.",
+      save: "Kaydet",
+      saving: "Kaydediliyor…",
+      genericError: "Bir şeyler ters gitti.",
+    },
   },
 };
 

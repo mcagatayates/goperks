@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { notifyPosWebhook } from "@/lib/pos";
 
 export class WaitlistError extends Error {}
 
@@ -22,7 +23,7 @@ export async function addToWaitlist(params: {
     throw new WaitlistError("Kişi sayısı en az 1 olmalıdır.");
   }
 
-  return prisma.waitlistEntry.create({
+  const entry = await prisma.waitlistEntry.create({
     data: {
       restaurantId: params.restaurantId,
       sessionId: params.sessionId,
@@ -34,6 +35,19 @@ export async function addToWaitlist(params: {
       notes: params.notes,
     },
   });
+
+  try {
+    const restaurant = await prisma.restaurant.findUnique({
+      where: { id: params.restaurantId },
+    });
+    if (restaurant) {
+      await notifyPosWebhook(restaurant, "waitlist.created", entry);
+    }
+  } catch (err) {
+    console.error("POS webhook failed", err);
+  }
+
+  return entry;
 }
 
 export async function listWaitlist(restaurantId: string, date?: string) {

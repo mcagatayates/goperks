@@ -30,6 +30,14 @@ model Restaurant {
   // without login so visitors can try it, unlike every real signed-up
   // restaurant. See lib/auth.ts's assertRestaurantAccess().
   isDemo                    Boolean  @default(false)
+  // Machine-to-machine POS/reservation-system integration (lib/pos.ts):
+  // apiKey authenticates a pull request to /api/restaurants/[slug]/pos/*;
+  // posWebhookUrl/Secret are for the push side (notifyPosWebhook). All
+  // null until the owner generates/sets them from the dashboard's
+  // Settings tab — no POS vendor is integrated by default.
+  apiKey                    String?  @unique
+  posWebhookUrl             String?
+  posWebhookSecret          String?
   createdAt                 DateTime @default(now())
   updatedAt                 DateTime @updatedAt
 

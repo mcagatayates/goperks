@@ -10,6 +10,7 @@ import {
   notifyReservationCancelled,
   notifyReservationConfirmed,
 } from "@/lib/notifications/reservation-notifications";
+import { notifyPosWebhook } from "@/lib/pos";
 import type { Channel } from "@/lib/types";
 
 export class ReservationError extends Error {}
@@ -169,6 +170,11 @@ export async function createReservation(params: {
   } catch (err) {
     console.error("Reservation confirmation notification failed", err);
   }
+  try {
+    await notifyPosWebhook(restaurant, "reservation.created", reservation);
+  } catch (err) {
+    console.error("POS webhook failed", err);
+  }
 
   return { reservation, restaurant };
 }
@@ -224,6 +230,12 @@ export async function modifyReservation(params: {
     include: { table: true },
   });
 
+  try {
+    await notifyPosWebhook(existing.restaurant, "reservation.updated", updated);
+  } catch (err) {
+    console.error("POS webhook failed", err);
+  }
+
   return updated;
 }
 
@@ -249,6 +261,11 @@ export async function cancelReservation(reservationId: string) {
     });
   } catch (err) {
     console.error("Reservation cancellation notification failed", err);
+  }
+  try {
+    await notifyPosWebhook(existing.restaurant, "reservation.cancelled", cancelled);
+  } catch (err) {
+    console.error("POS webhook failed", err);
   }
 
   return cancelled;
