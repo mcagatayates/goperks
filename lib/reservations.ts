@@ -14,7 +14,7 @@ async function getRestaurantOrThrow(restaurantId: string) {
   const restaurant = await prisma.restaurant.findUnique({
     where: { id: restaurantId },
   });
-  if (!restaurant) throw new ReservationError("Restaurant not found");
+  if (!restaurant) throw new ReservationError("Restoran bulunamadı.");
   return restaurant;
 }
 
@@ -24,13 +24,13 @@ function assertNotPastDate(date: string) {
   // comparisons against the real clock unreliable.
   const todayStr = new Date().toISOString().slice(0, 10);
   if (date < todayStr) {
-    throw new ReservationError("Cannot book a reservation for a past date.");
+    throw new ReservationError("Geçmiş bir tarih için rezervasyon yapılamaz.");
   }
 }
 
 function assertValidPartySize(partySize: number) {
   if (!Number.isInteger(partySize) || partySize < 1) {
-    throw new ReservationError("Party size must be at least 1.");
+    throw new ReservationError("Kişi sayısı en az 1 olmalıdır.");
   }
 }
 
@@ -46,7 +46,7 @@ function assertWithinOpeningHours(
   // Allow the reservation to run up to 15 minutes past closing (last seating).
   if (start < open || start > close || end > close + 15) {
     throw new ReservationError(
-      `Requested time is outside opening hours (${restaurant.openTime}-${restaurant.closeTime}).`
+      `Talep edilen saat çalışma saatleri dışında (${restaurant.openTime}-${restaurant.closeTime}).`
     );
   }
 }
@@ -113,10 +113,10 @@ export async function createReservation(params: {
   channel?: Channel;
 }) {
   if (!params.customerName.trim()) {
-    throw new ReservationError("Guest name is required.");
+    throw new ReservationError("Misafir adı gereklidir.");
   }
   if (!params.customerPhone.trim()) {
-    throw new ReservationError("Guest phone number is required.");
+    throw new ReservationError("Misafir telefon numarası gereklidir.");
   }
 
   const { restaurant, startsAt, durationMinutes, availableTables } =
@@ -129,7 +129,7 @@ export async function createReservation(params: {
 
   if (availableTables.length === 0) {
     throw new ReservationError(
-      "No tables are available for that date, time and party size."
+      "Bu tarih, saat ve kişi sayısı için uygun masa yok."
     );
   }
 
@@ -167,9 +167,9 @@ export async function modifyReservation(params: {
     where: { id: params.reservationId },
     include: { restaurant: true },
   });
-  if (!existing) throw new ReservationError("Reservation not found");
+  if (!existing) throw new ReservationError("Rezervasyon bulunamadı.");
   if (existing.status === "cancelled") {
-    throw new ReservationError("This reservation was already cancelled.");
+    throw new ReservationError("Bu rezervasyon zaten iptal edilmiş.");
   }
 
   const date = params.date ?? existing.startsAt.toISOString().slice(0, 10);
@@ -191,7 +191,7 @@ export async function modifyReservation(params: {
 
   if (availableTables.length === 0) {
     throw new ReservationError(
-      "No tables are available for the new date, time and party size."
+      "Yeni tarih, saat ve kişi sayısı için uygun masa yok."
     );
   }
 
@@ -214,7 +214,7 @@ export async function cancelReservation(reservationId: string) {
   const existing = await prisma.reservation.findUnique({
     where: { id: reservationId },
   });
-  if (!existing) throw new ReservationError("Reservation not found");
+  if (!existing) throw new ReservationError("Rezervasyon bulunamadı.");
 
   return prisma.reservation.update({
     where: { id: reservationId },

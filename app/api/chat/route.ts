@@ -14,7 +14,7 @@ export async function POST(request: Request) {
 
   if (!restaurantSlug || !message) {
     return NextResponse.json(
-      { error: "restaurantSlug and message are required" },
+      { error: "restaurantSlug ve message alanları gereklidir." },
       { status: 400 }
     );
   }
@@ -23,7 +23,7 @@ export async function POST(request: Request) {
     where: { slug: restaurantSlug },
   });
   if (!restaurant) {
-    return NextResponse.json({ error: "Restaurant not found" }, { status: 404 });
+    return NextResponse.json({ error: "Restoran bulunamadı." }, { status: 404 });
   }
 
   let session = sessionId
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error:
-          "ANTHROPIC_API_KEY is not configured on the server. Add it to .env to enable the AI concierge.",
+          "Sunucuda ANTHROPIC_API_KEY tanımlı değil. AI resepsiyonisti etkinleştirmek için .env dosyasına ekleyin.",
       },
       { status: 500 }
     );
@@ -75,7 +75,7 @@ export async function POST(request: Request) {
   } catch (err) {
     console.error("Agent turn failed", err);
     return NextResponse.json(
-      { error: "The AI concierge is temporarily unavailable." },
+      { error: "AI resepsiyonist şu anda geçici olarak kullanılamıyor." },
       { status: 502 }
     );
   }

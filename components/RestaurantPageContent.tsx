@@ -1,6 +1,6 @@
 import Link from "next/link";
 import ChatWidget from "@/components/ChatWidget";
-import { dictionaries, localePrefix, otherLocale, type Locale } from "@/lib/i18n";
+import { dictionary } from "@/lib/i18n";
 
 type MenuItem = {
   id: string;
@@ -23,25 +23,18 @@ type Restaurant = {
 
 export default function RestaurantPageContent({
   restaurant,
-  locale,
 }: {
   restaurant: Restaurant;
-  locale: Locale;
 }) {
-  const t = dictionaries[locale].restaurant;
+  const t = dictionary.restaurant;
   const specials = restaurant.menuItems.filter((m) => m.isSpecial);
   const menu = restaurant.menuItems.filter((m) => !m.isSpecial);
-  const other = otherLocale(locale);
-  const otherHref = `${localePrefix(other)}/r/${restaurant.slug}`;
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-3xl flex-col gap-10 px-6 py-16">
-      <div className="flex items-center justify-between text-xs font-medium text-muted">
+      <div className="text-xs font-medium text-muted">
         <Link href="/" className="font-display tracking-tight hover:text-accent">
           {t.poweredBy}
-        </Link>
-        <Link href={otherHref} className="hover:text-foreground">
-          {other.toUpperCase()}
         </Link>
       </div>
 
@@ -105,7 +98,6 @@ export default function RestaurantPageContent({
       <ChatWidget
         restaurantSlug={restaurant.slug}
         restaurantName={restaurant.name}
-        locale={locale}
       />
     </main>
   );

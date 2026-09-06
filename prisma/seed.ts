@@ -16,7 +16,7 @@ async function main() {
       slug: "masa19",
       name: "Masa19",
       description:
-        "Modern Turkish cuisine with a seasonal, ingredient-driven menu, in the heart of Istanbul. Cozy dining room and a lively outdoor terrace.",
+        "İstanbul'un kalbinde, mevsimsel ve malzeme odaklı bir menüyle modern Türk mutfağı. Sıcak bir salon ve canlı bir açık teras.",
       address: "Bogazkesen Cad. No:19, Beyoglu, Istanbul",
       phone: "+90 212 555 01 19",
       timezone: "Europe/Istanbul",
@@ -39,28 +39,28 @@ async function main() {
         create: [
           {
             name: "Levrek Tartar",
-            description: "Sea bass tartare, blood orange, olive oil, dill",
+            description: "Levrek tartar, kan portakalı, zeytinyağı, dereotu",
             price: 420,
             category: "starter",
             isSpecial: true,
           },
           {
             name: "Kuzu Incik",
-            description: "Slow-braised lamb shank, smoked eggplant puree",
+            description: "Ağır ateşte pişmiş kuzu incik, közlenmiş patlıcan püresi",
             price: 780,
             category: "main",
             isSpecial: true,
           },
           {
             name: "Mercimek Corbasi",
-            description: "Classic red lentil soup",
+            description: "Klasik kırmızı mercimek çorbası",
             price: 180,
             category: "starter",
             isSpecial: false,
           },
           {
             name: "Antep Fistikli Kunefe",
-            description: "Kunefe with Antep pistachio and kaymak",
+            description: "Antep fıstıklı künefe, kaymak eşliğinde",
             price: 260,
             category: "dessert",
             isSpecial: true,

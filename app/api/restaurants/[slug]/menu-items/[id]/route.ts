@@ -19,7 +19,7 @@ export async function PATCH(
 
   if (price !== undefined && price < 0) {
     return NextResponse.json(
-      { error: "price must not be negative" },
+      { error: "Fiyat negatif olamaz." },
       { status: 400 }
     );
   }

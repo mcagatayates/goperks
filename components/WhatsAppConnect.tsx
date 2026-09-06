@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { dictionaries, type Locale } from "@/lib/i18n";
+import { dictionary } from "@/lib/i18n";
 import { IconCheck } from "@/components/icons";
 
 declare global {
@@ -46,14 +46,8 @@ function loadFacebookSdk(appId: string): Promise<void> {
   });
 }
 
-export default function WhatsAppConnect({
-  slug,
-  locale,
-}: {
-  slug: string;
-  locale: Locale;
-}) {
-  const t = dictionaries[locale].admin.whatsapp;
+export default function WhatsAppConnect({ slug }: { slug: string }) {
+  const t = dictionary.admin.whatsapp;
   const [connection, setConnection] = useState<Connection>(null);
   const [metaConfigured, setMetaConfigured] = useState(false);
   const [loading, setLoading] = useState(true);

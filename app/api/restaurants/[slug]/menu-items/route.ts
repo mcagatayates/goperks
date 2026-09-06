@@ -8,7 +8,7 @@ export async function POST(
   const { slug } = await ctx.params;
   const restaurant = await prisma.restaurant.findUnique({ where: { slug } });
   if (!restaurant) {
-    return NextResponse.json({ error: "Restaurant not found" }, { status: 404 });
+    return NextResponse.json({ error: "Restoran bulunamadı." }, { status: 404 });
   }
 
   const body = await request.json();
@@ -22,7 +22,7 @@ export async function POST(
 
   if (!name?.trim() || !category?.trim() || price === undefined || price < 0) {
     return NextResponse.json(
-      { error: "name, category and a non-negative price are required" },
+      { error: "İsim, kategori ve negatif olmayan bir fiyat gereklidir." },
       { status: 400 }
     );
   }

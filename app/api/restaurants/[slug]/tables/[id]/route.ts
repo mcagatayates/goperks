@@ -15,7 +15,7 @@ export async function PATCH(
 
   if (capacity !== undefined && capacity < 1) {
     return NextResponse.json(
-      { error: "capacity must be at least 1" },
+      { error: "Kapasite en az 1 olmalıdır." },
       { status: 400 }
     );
   }

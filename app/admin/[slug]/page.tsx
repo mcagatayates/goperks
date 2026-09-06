@@ -8,7 +8,5 @@ export default async function AdminPage(props: PageProps<"/admin/[slug]">) {
   const restaurant = await prisma.restaurant.findUnique({ where: { slug } });
   if (!restaurant) notFound();
 
-  return (
-    <AdminDashboard slug={slug} restaurantName={restaurant.name} locale="tr" />
-  );
+  return <AdminDashboard slug={slug} restaurantName={restaurant.name} />;
 }

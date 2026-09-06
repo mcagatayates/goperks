@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { dictionaries, type Locale } from "@/lib/i18n";
+import { dictionary } from "@/lib/i18n";
 import { IconChat, IconClose, IconSend } from "@/components/icons";
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
@@ -9,13 +9,11 @@ type ChatMessage = { role: "user" | "assistant"; content: string };
 export default function ChatWidget({
   restaurantSlug,
   restaurantName,
-  locale = "en",
 }: {
   restaurantSlug: string;
   restaurantName: string;
-  locale?: Locale;
 }) {
-  const t = dictionaries[locale].chat;
+  const t = dictionary.chat;
   const [open, setOpen] = useState(false);
   const storageKey = `heytable:session:${restaurantSlug}`;
   const [sessionId, setSessionId] = useState<string | null>(() => {

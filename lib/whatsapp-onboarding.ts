@@ -38,7 +38,7 @@ export async function exchangeCodeForAccessToken(
   const appSecret = process.env.META_APP_SECRET;
   if (!appId || !appSecret) {
     throw new WhatsAppOnboardingError(
-      "META_APP_ID/META_APP_SECRET are not configured on the server."
+      "Sunucuda META_APP_ID/META_APP_SECRET tanımlı değil."
     );
   }
 
@@ -51,13 +51,13 @@ export async function exchangeCodeForAccessToken(
   if (!res.ok) {
     const body = await res.text();
     throw new WhatsAppOnboardingError(
-      `Meta token exchange failed (${res.status}): ${body}`
+      `Meta token değişimi başarısız oldu (${res.status}): ${body}`
     );
   }
   const data = await res.json();
   if (!data.access_token) {
     throw new WhatsAppOnboardingError(
-      "Meta token exchange succeeded but returned no access_token."
+      "Meta token değişimi başarılı oldu ama access_token dönmedi."
     );
   }
   return data.access_token as string;
@@ -76,7 +76,7 @@ export async function subscribeAppToWaba(wabaId: string, accessToken: string) {
   if (!res.ok) {
     const body = await res.text();
     throw new WhatsAppOnboardingError(
-      `Subscribing to WABA webhooks failed (${res.status}): ${body}`
+      `WABA webhook aboneliği başarısız oldu (${res.status}): ${body}`
     );
   }
 }
@@ -93,7 +93,7 @@ export async function getDisplayPhoneNumber(
   );
   if (!res.ok) {
     throw new WhatsAppOnboardingError(
-      `Could not read the phone number's display name (${res.status}).`
+      `Telefon numarasının görünen adı okunamadı (${res.status}).`
     );
   }
   const data = await res.json();

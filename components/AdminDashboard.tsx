@@ -7,7 +7,7 @@ import {
   type FormEvent,
   type ReactNode,
 } from "react";
-import { dictionaries, localePrefix, otherLocale, type Locale } from "@/lib/i18n";
+import { dictionary } from "@/lib/i18n";
 import type { Channel, ReservationStatus } from "@/lib/types";
 import {
   IconCalendar,
@@ -86,30 +86,23 @@ function EmptyState({ icon, message }: { icon: ReactNode; message: string }) {
 export default function AdminDashboard({
   slug,
   restaurantName,
-  locale,
 }: {
   slug: string;
   restaurantName: string;
-  locale: Locale;
 }) {
-  const t = dictionaries[locale].admin;
+  const t = dictionary.admin;
   const [tab, setTab] = useState<
     "reservations" | "menu" | "conversations" | "settings"
   >("reservations");
 
-  const other = otherLocale(locale);
-  const otherHref = `${localePrefix(other)}/admin/${slug}`;
-
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-6 px-6 py-12">
-      <div className="flex items-center justify-between text-xs font-medium text-muted">
-        <Link href="/" className="font-display tracking-tight hover:text-accent">
-          {t.dashboardLabel}
-        </Link>
-        <Link href={otherHref} className="hover:text-foreground">
-          {other.toUpperCase()}
-        </Link>
-      </div>
+      <Link
+        href="/"
+        className="font-display text-xs font-medium tracking-tight text-muted hover:text-accent"
+      >
+        {t.dashboardLabel}
+      </Link>
 
       <h1 className="font-display text-3xl tracking-tight">
         {restaurantName}
@@ -138,20 +131,16 @@ export default function AdminDashboard({
         ))}
       </nav>
 
-      {tab === "reservations" && (
-        <ReservationsTab slug={slug} locale={locale} />
-      )}
-      {tab === "menu" && <MenuTab slug={slug} locale={locale} />}
-      {tab === "conversations" && (
-        <ConversationsTab slug={slug} locale={locale} />
-      )}
-      {tab === "settings" && <WhatsAppConnect slug={slug} locale={locale} />}
+      {tab === "reservations" && <ReservationsTab slug={slug} />}
+      {tab === "menu" && <MenuTab slug={slug} />}
+      {tab === "conversations" && <ConversationsTab slug={slug} />}
+      {tab === "settings" && <WhatsAppConnect slug={slug} />}
     </main>
   );
 }
 
-function ReservationsTab({ slug, locale }: { slug: string; locale: Locale }) {
-  const t = dictionaries[locale].admin;
+function ReservationsTab({ slug }: { slug: string }) {
+  const t = dictionary.admin;
   const [date, setDate] = useState(today());
   const [reservations, setReservations] = useState<Reservation[] | null>(
     null
@@ -222,7 +211,6 @@ function ReservationsTab({ slug, locale }: { slug: string; locale: Locale }) {
       {showForm && (
         <NewReservationForm
           slug={slug}
-          locale={locale}
           defaultDate={date}
           onCreated={() => {
             setShowForm(false);
@@ -295,16 +283,14 @@ function ReservationsTab({ slug, locale }: { slug: string; locale: Locale }) {
 
 function NewReservationForm({
   slug,
-  locale,
   defaultDate,
   onCreated,
 }: {
   slug: string;
-  locale: Locale;
   defaultDate: string;
   onCreated: () => void;
 }) {
-  const t = dictionaries[locale].admin.newReservationForm;
+  const t = dictionary.admin.newReservationForm;
   const [time, setTime] = useState("19:00");
   const [partySize, setPartySize] = useState(2);
   const [customerName, setCustomerName] = useState("");
@@ -407,8 +393,8 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-function MenuTab({ slug, locale }: { slug: string; locale: Locale }) {
-  const t = dictionaries[locale].admin;
+function MenuTab({ slug }: { slug: string }) {
+  const t = dictionary.admin;
   const categoryOptions = t.newMenuItemForm.categoryOptions;
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [tables, setTables] = useState<Table[]>([]);
@@ -481,7 +467,6 @@ function MenuTab({ slug, locale }: { slug: string; locale: Locale }) {
         {showItemForm && (
           <NewMenuItemForm
             slug={slug}
-            locale={locale}
             onCreated={() => {
               setShowItemForm(false);
               refresh();
@@ -558,7 +543,6 @@ function MenuTab({ slug, locale }: { slug: string; locale: Locale }) {
         {showTableForm && (
           <NewTableForm
             slug={slug}
-            locale={locale}
             onCreated={() => {
               setShowTableForm(false);
               refresh();
@@ -610,14 +594,12 @@ function MenuTab({ slug, locale }: { slug: string; locale: Locale }) {
 
 function NewTableForm({
   slug,
-  locale,
   onCreated,
 }: {
   slug: string;
-  locale: Locale;
   onCreated: () => void;
 }) {
-  const t = dictionaries[locale].admin.newTableForm;
+  const t = dictionary.admin.newTableForm;
   const [name, setName] = useState("");
   const [capacity, setCapacity] = useState(2);
   const [error, setError] = useState<string | null>(null);
@@ -675,14 +657,12 @@ function NewTableForm({
 
 function NewMenuItemForm({
   slug,
-  locale,
   onCreated,
 }: {
   slug: string;
-  locale: Locale;
   onCreated: () => void;
 }) {
-  const t = dictionaries[locale].admin.newMenuItemForm;
+  const t = dictionary.admin.newMenuItemForm;
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState(0);
@@ -768,14 +748,8 @@ function NewMenuItemForm({
   );
 }
 
-function ConversationsTab({
-  slug,
-  locale,
-}: {
-  slug: string;
-  locale: Locale;
-}) {
-  const t = dictionaries[locale].admin;
+function ConversationsTab({ slug }: { slug: string }) {
+  const t = dictionary.admin;
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
   const [selected, setSelected] = useState<SessionDetail | null>(null);
 

@@ -12,7 +12,7 @@ export async function PATCH(
 
   if (!status || !RESERVATION_STATUSES.includes(status as never)) {
     return NextResponse.json(
-      { error: `status must be one of: ${RESERVATION_STATUSES.join(", ")}` },
+      { error: `Durum şunlardan biri olmalı: ${RESERVATION_STATUSES.join(", ")}` },
       { status: 400 }
     );
   }

@@ -1,274 +1,9 @@
 import type { Channel, ReservationStatus } from "@/lib/types";
 
-export const locales = ["en", "tr"] as const;
-export type Locale = (typeof locales)[number];
-
-// Turkish serves at bare paths ("/", "/r/[slug]", "/admin/[slug]") since
-// Turkey is the primary market; English lives under "/en" instead of the
-// other way around.
-export const defaultLocale: Locale = "tr";
-
-export function otherLocale(locale: Locale): Locale {
-  return locale === "en" ? "tr" : "en";
-}
-
-export function localePrefix(locale: Locale): string {
-  return locale === defaultLocale ? "" : `/${locale}`;
-}
-
-// English is the source of truth for shape; the Turkish dictionary is typed
-// against it (`: typeof en`) so a missing key is a compile error, not a
-// silent fallback to English text at runtime.
-const en = {
-  nav: {
-    pricing: "Pricing",
-    liveDemo: "Live demo",
-    dashboard: "Dashboard",
-  },
-  landing: {
-    heroTitle: "Your restaurant's front desk, staffed by AI — 24/7",
-    heroSubtitle:
-      "HeyTable answers every reservation request on your website and WhatsApp, checks live table availability, confirms instantly, and suggests tonight's specials — so your team can focus on the dining room.",
-    ctaPrimary: "Try the live demo",
-    ctaSecondary: "See the restaurant dashboard",
-    builtForLabel: "Built for",
-    audiences: [
-      "Independent restaurants",
-      "Multi-location groups",
-      "Fine dining",
-      "Casual dining & cafés",
-    ],
-    howItWorksTitle: "How it works",
-    steps: [
-      {
-        title: "Guest messages",
-        body: "On your website chat or WhatsApp — any time of day, in whatever language they write in.",
-      },
-      {
-        title: "HeyTable handles it",
-        body: "Checks real availability against your actual tables, confirms the booking, and can suggest tonight's specials.",
-      },
-      {
-        title: "Your team sees everything",
-        body: "Every reservation and full conversation transcript lands in one dashboard — no manual entry.",
-      },
-    ],
-    featuresTitle: "Everything your front desk does — automated",
-    features: [
-      {
-        title: "Web chat + WhatsApp",
-        body: "The same AI concierge, wherever guests already are — no app to download.",
-      },
-      {
-        title: "Real-time availability",
-        body: "Every confirmation is checked against your actual tables — never double-booked.",
-      },
-      {
-        title: "Self-serve changes",
-        body: "Guests reschedule or cancel by just asking — no phone call, no hold music.",
-      },
-      {
-        title: "Smart upsell",
-        body: "Surfaces the chef's specials and seasonal menu at the right moment in the conversation.",
-      },
-      {
-        title: "Multilingual by default",
-        body: "Replies in whatever language the guest writes in — no configuration needed.",
-      },
-      {
-        title: "One dashboard",
-        body: "Reservations, tables, specials, and full conversation logs, all in one place.",
-      },
-    ],
-    channelsTitle: "Channels",
-    channels: [
-      { label: "Web chat", status: "Live", isLive: true },
-      { label: "WhatsApp", status: "Live", isLive: true },
-      { label: "Voice / phone", status: "Coming soon", isLive: false },
-    ],
-    pricingTitle: "Simple, transparent pricing",
-    pricingSubtitle:
-      "Priced for an independent restaurant's budget, not an enterprise one. Every plan includes the AI concierge, live availability, and the staff dashboard.",
-    pricingBillingNote: "Prices in Turkish Lira, billed monthly.",
-    pricingOverage: "Extra conversations beyond your plan: ₺4 each.",
-    pricingTiers: [
-      {
-        name: "Starter",
-        price: "₺1.490",
-        period: "/mo",
-        description: "For a single restaurant getting started.",
-        features: [
-          "Web chat concierge",
-          "Up to 200 AI conversations/mo",
-          "Reservations, tables & menu management",
-          "Full conversation history",
-        ],
-        cta: "Get started",
-        highlighted: false,
-      },
-      {
-        name: "Growth",
-        price: "₺3.990",
-        period: "/mo",
-        description: "For restaurants ready to add WhatsApp.",
-        badge: "Most popular",
-        features: [
-          "Everything in Starter",
-          "WhatsApp channel",
-          "Up to 800 AI conversations/mo",
-          "Priority support",
-        ],
-        cta: "Get started",
-        highlighted: true,
-      },
-      {
-        name: "Enterprise",
-        price: "Custom",
-        period: "",
-        description: "For multi-location groups and custom needs.",
-        features: [
-          "Everything in Growth",
-          "Multiple locations",
-          "Custom POS/reservation integrations",
-          "Dedicated account manager",
-        ],
-        cta: "Contact us",
-        highlighted: false,
-      },
-    ],
-    closingTitle: "See it running, not just described",
-    closingBody:
-      'The live demo is a fully working prototype — book a real table on "Masa19", then check the dashboard to see it land there instantly.',
-    footer:
-      'HeyTable — MVP prototype. Demo restaurant "Masa19" seeded for testing.',
-  },
-  restaurant: {
-    poweredBy: "Powered by HeyTable",
-    openDaily: "Open daily",
-    specialsTitle: "Today's specials",
-    menuTitle: "Menu",
-    chatHint:
-      "Tap the chat bubble in the corner to book, change, or cancel a table — our AI concierge answers instantly, any time of day.",
-  },
-  chat: {
-    headerSubtitle: "AI reservations concierge",
-    greeting: (restaurantName: string) =>
-      `Hi! I'm the ${restaurantName} reservations concierge. I can book, change, or cancel a table for you — what would you like to do?`,
-    inputPlaceholder: "Ask about a table…",
-    send: "Send",
-    typing: "Typing…",
-    bubbleOpen: "Reserve a table",
-    bubbleClose: "Close",
-    genericError: "Something went wrong.",
-    closeAria: "Close chat",
-  },
-  admin: {
-    dashboardLabel: "HeyTable dashboard",
-    tabs: {
-      reservations: "Reservations",
-      menu: "Menu & Specials",
-      conversations: "Conversations",
-      settings: "Settings",
-    },
-    reservations: {
-      dateLabel: "Date",
-      newButton: "New reservation",
-      cancelButton: "Cancel",
-      loading: "Loading…",
-      empty: "No reservations for this date.",
-      colTime: "Time",
-      colGuest: "Guest",
-      colParty: "Party",
-      colTable: "Table",
-      colChannel: "Channel",
-      colStatus: "Status",
-      colNotes: "Notes",
-    },
-    newReservationForm: {
-      timeLabel: "Time",
-      partySizeLabel: "Party size",
-      nameLabel: "Guest name",
-      phoneLabel: "Phone",
-      notesLabel: "Notes",
-      notesPlaceholder: "optional",
-      submit: "Book table",
-      submitting: "Booking…",
-      genericError: "Could not create the reservation.",
-    },
-    menu: {
-      menuTitle: "Menu & specials",
-      addItemButton: "Add item",
-      tablesTitle: "Tables",
-      addTableButton: "Add table",
-      specialLabel: "special",
-      availableLabel: "available",
-      removeLabel: "remove",
-      seatsLabel: "seats",
-      activeLabel: "active",
-      confirmDelete: "Remove this item from the menu?",
-    },
-    newMenuItemForm: {
-      nameLabel: "Name",
-      categoryLabel: "Category",
-      priceLabel: "Price (₺)",
-      descriptionLabel: "Description",
-      specialLabel: "special",
-      submit: "Add item",
-      genericError: "Could not add the item.",
-      // value is the canonical, locale-independent category slug stored in
-      // the database; label is what's shown in this locale's dropdown.
-      categoryOptions: [
-        { value: "starter", label: "starter" },
-        { value: "main", label: "main" },
-        { value: "dessert", label: "dessert" },
-        { value: "drink", label: "drink" },
-      ],
-    },
-    newTableForm: {
-      nameLabel: "Name",
-      namePlaceholder: "T9",
-      capacityLabel: "Capacity",
-      submit: "Add table",
-      genericError: "Could not add the table.",
-    },
-    conversations: {
-      empty: "No conversations yet.",
-      msgsSuffix: "msgs",
-      selectPrompt: "Select a conversation to view the transcript.",
-    },
-    statusLabels: {
-      pending: "Pending",
-      confirmed: "Confirmed",
-      cancelled: "Cancelled",
-      completed: "Completed",
-      no_show: "No-show",
-    } satisfies Record<ReservationStatus, string>,
-    channelLabels: {
-      web: "Web",
-      whatsapp: "WhatsApp",
-      voice: "Voice",
-      staff: "Staff",
-    } satisfies Record<Channel, string>,
-    whatsapp: {
-      title: "WhatsApp",
-      description:
-        "Connect your own WhatsApp Business number — guests can message it directly and the AI concierge answers, same as web chat.",
-      notConfigured:
-        "This restaurant's HeyTable account isn't set up for WhatsApp yet. That's a one-time setup on our side (a Meta Tech Provider application), not something you need to do — ask us to enable it for your account.",
-      connectButton: "Connect WhatsApp",
-      connecting: "Connecting…",
-      connectedTo: (phone: string) => `Connected — ${phone}`,
-      disconnect: "Disconnect",
-      loading: "Loading…",
-      popupCancelled: "The connection popup was closed before finishing.",
-      missingWabaData:
-        "Meta didn't return the business account details — please try again.",
-      genericError: "Could not finish connecting WhatsApp.",
-    },
-  },
-};
-
-const tr: typeof en = {
+// The product targets the Turkish restaurant market only — there is no
+// locale switching, so this is a flat dictionary rather than a per-locale
+// lookup table.
+export const dictionary = {
   nav: {
     pricing: "Fiyatlandırma",
     liveDemo: "Canlı demo",
@@ -464,6 +199,8 @@ const tr: typeof en = {
       specialLabel: "özel",
       submit: "Ürün ekle",
       genericError: "Ürün eklenemedi.",
+      // value is the canonical, database-stored category slug; label is
+      // what's shown in the dropdown.
       categoryOptions: [
         { value: "starter", label: "başlangıç" },
         { value: "main", label: "ana yemek" },
@@ -489,13 +226,13 @@ const tr: typeof en = {
       cancelled: "İptal edildi",
       completed: "Tamamlandı",
       no_show: "Gelmedi",
-    },
+    } satisfies Record<ReservationStatus, string>,
     channelLabels: {
       web: "Web",
       whatsapp: "WhatsApp",
       voice: "Sesli",
       staff: "Personel",
-    },
+    } satisfies Record<Channel, string>,
     whatsapp: {
       title: "WhatsApp",
       description:
@@ -515,6 +252,4 @@ const tr: typeof en = {
   },
 };
 
-export const dictionaries = { en, tr };
-
-export type Dictionary = typeof en;
+export type Dictionary = typeof dictionary;

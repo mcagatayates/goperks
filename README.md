@@ -61,42 +61,23 @@ Without `ANTHROPIC_API_KEY` set, every other part of the app works (pages,
 reservation CRUD, dashboard) but the chat widget will return a clear error
 instead of a reply.
 
-Every page above also has an English counterpart at the same paths under
-`/en` (e.g. `/en`, `/en/r/masa19`, `/en/admin/masa19`), with an EN/TR link in
-each page's header to switch between them. See "Localization" below.
+The product targets the Turkish restaurant market only, so the UI is
+Turkish-only — see "Localization" below.
 
 ## Localization
 
-Turkish is the default/primary locale — it serves at bare paths (`/`,
-`/r/[slug]`, `/admin/[slug]`) since Turkey is the target market; English
-lives under `/en` instead of the more common other-way-around convention.
-`lib/i18n.ts`'s `defaultLocale` and `localePrefix()` are the single place
-this is decided — every link in the app computes its href through
-`localePrefix()` rather than hardcoding which locale is bare.
+The app's own UI chrome (landing page, restaurant page, chat widget, admin
+dashboard) is Turkish-only — there is no language switcher and no English
+build. `lib/i18n.ts` holds a single flat `dictionary` object rather than a
+per-locale lookup table, so every component imports `dictionary` directly
+instead of threading a `locale` prop through.
 
-`lib/i18n.ts` holds the full UI dictionary for both locales. The English
-dictionary (`en`) is the source of truth for shape (this is independent of
-which locale is the *default route* — see above); the Turkish one (`tr`) is
-typed as `typeof en`, so a missing translation key is a compile error, not a
-silent fallback to English text. Covers the landing page, the restaurant
-page, the chat widget, and the admin dashboard (including reservation
-status and channel display labels).
-
-This only localizes the app's own UI chrome — not restaurant-specific
-content (name, description, menu item names/descriptions), which is stored
-once in the database regardless of locale. The AI concierge itself doesn't
-need any of this: it already replies in whichever language the guest writes
-in, by design of its system prompt.
-
-Routes are duplicated per locale rather than using a `[locale]` dynamic
-segment:
-
-- `/`, `/r/[slug]`, `/admin/[slug]` — Turkish (default)
-- `/en`, `/en/r/[slug]`, `/en/admin/[slug]` — English
-
-Both variants render the same shared components (`LandingPage`,
-`RestaurantPageContent`, `AdminDashboard`, `ChatWidget`) with a `locale`
-prop — no page has its own copy of the UI logic.
+This only covers the app's own UI chrome — not restaurant-specific content
+(name, description, menu item names/descriptions), which is free-form text
+entered per restaurant. The AI concierge itself replies in whichever
+language the guest writes in, by design of its system prompt (useful for
+tourists messaging in English or another language even though the product
+and its dashboard are Turkish-only).
 
 ## How the agent works
 
@@ -200,19 +181,16 @@ Postgres:
 
 ```
 app/
-  page.tsx                    marketing landing page (tr, default)
-  en/page.tsx                 marketing landing page (en)
-  r/[slug]/page.tsx           public restaurant page + chat widget (tr)
-  en/r/[slug]/page.tsx        public restaurant page + chat widget (en)
-  admin/[slug]/page.tsx       staff dashboard (tr)
-  en/admin/[slug]/page.tsx    staff dashboard (en)
+  page.tsx                    marketing landing page
+  r/[slug]/page.tsx           public restaurant page + chat widget
+  admin/[slug]/page.tsx       staff dashboard
   api/chat/route.ts           web chat endpoint
   api/webhooks/whatsapp/      WhatsApp Cloud API webhook (multi-tenant)
   api/restaurants/[slug]/     reservations / tables / menu-items / sessions
                               / whatsapp connect+status / restaurant data APIs
 components/
-  landing/LandingPage.tsx     landing page content, shared across locales
-  RestaurantPageContent.tsx   restaurant page content, shared across locales
+  landing/LandingPage.tsx     landing page content
+  RestaurantPageContent.tsx   restaurant page content
   ChatWidget.tsx              floating web chat widget (client component)
   AdminDashboard.tsx          staff dashboard UI (client component)
   WhatsAppConnect.tsx         Embedded Signup "Connect WhatsApp" button
@@ -222,7 +200,7 @@ lib/
   reservations.ts             availability + reservation CRUD (core logic)
   channels/whatsapp.ts        WhatsApp Cloud API send/parse adapter
   whatsapp-onboarding.ts      Embedded Signup token exchange + WABA subscribe
-  i18n.ts                     en/tr UI dictionary
+  i18n.ts                     Turkish UI dictionary
   prisma.ts, time.ts, types.ts
 prisma/
   schema.prisma, seed.ts

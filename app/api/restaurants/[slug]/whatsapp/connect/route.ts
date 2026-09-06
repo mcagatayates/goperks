@@ -17,7 +17,7 @@ export async function POST(
   const { slug } = await ctx.params;
   const restaurant = await prisma.restaurant.findUnique({ where: { slug } });
   if (!restaurant) {
-    return NextResponse.json({ error: "Restaurant not found" }, { status: 404 });
+    return NextResponse.json({ error: "Restoran bulunamadı." }, { status: 404 });
   }
 
   const body = await request.json();
@@ -29,7 +29,7 @@ export async function POST(
 
   if (!code || !wabaId || !phoneNumberId) {
     return NextResponse.json(
-      { error: "code, wabaId and phoneNumberId are required" },
+      { error: "code, wabaId ve phoneNumberId alanları gereklidir." },
       { status: 400 }
     );
   }

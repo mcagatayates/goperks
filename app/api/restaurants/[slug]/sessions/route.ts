@@ -8,7 +8,7 @@ export async function GET(
   const { slug } = await ctx.params;
   const restaurant = await prisma.restaurant.findUnique({ where: { slug } });
   if (!restaurant) {
-    return NextResponse.json({ error: "Restaurant not found" }, { status: 404 });
+    return NextResponse.json({ error: "Restoran bulunamadı." }, { status: 404 });
   }
 
   const sessions = await prisma.conversationSession.findMany({

@@ -14,7 +14,7 @@ export async function GET(
     },
   });
   if (!restaurant) {
-    return NextResponse.json({ error: "Restaurant not found" }, { status: 404 });
+    return NextResponse.json({ error: "Restoran bulunamadı." }, { status: 404 });
   }
   return NextResponse.json({ restaurant });
 }

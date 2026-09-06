@@ -12,7 +12,7 @@ export async function GET(
     include: { whatsappConnection: true },
   });
   if (!restaurant) {
-    return NextResponse.json({ error: "Restaurant not found" }, { status: 404 });
+    return NextResponse.json({ error: "Restoran bulunamadı." }, { status: 404 });
   }
 
   const connection = restaurant.whatsappConnection;
@@ -35,7 +35,7 @@ export async function DELETE(
   const { slug } = await ctx.params;
   const restaurant = await prisma.restaurant.findUnique({ where: { slug } });
   if (!restaurant) {
-    return NextResponse.json({ error: "Restaurant not found" }, { status: 404 });
+    return NextResponse.json({ error: "Restoran bulunamadı." }, { status: 404 });
   }
 
   await prisma.whatsAppConnection.updateMany({

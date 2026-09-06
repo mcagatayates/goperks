@@ -11,7 +11,7 @@ export async function GET(
     include: { messages: { orderBy: { createdAt: "asc" } } },
   });
   if (!session) {
-    return NextResponse.json({ error: "Session not found" }, { status: 404 });
+    return NextResponse.json({ error: "Oturum bulunamadı." }, { status: 404 });
   }
   return NextResponse.json({ session });
 }

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import PhoneMockup from "@/components/landing/PhoneMockup";
-import { dictionaries, localePrefix, otherLocale, type Locale } from "@/lib/i18n";
+import { dictionary } from "@/lib/i18n";
 import {
   IconArrowRight,
   IconCalendar,
@@ -22,12 +22,9 @@ const FEATURE_ICONS = [
   IconChart,
 ];
 
-export default function LandingPage({ locale }: { locale: Locale }) {
-  const t = dictionaries[locale].landing;
-  const nav = dictionaries[locale].nav;
-  const prefix = localePrefix(locale);
-  const other = otherLocale(locale);
-  const otherPrefix = localePrefix(other);
+export default function LandingPage() {
+  const t = dictionary.landing;
+  const nav = dictionary.nav;
 
   return (
     <main className="flex min-h-screen flex-col">
@@ -41,22 +38,16 @@ export default function LandingPage({ locale }: { locale: Locale }) {
             {nav.pricing}
           </Link>
           <Link
-            href={`${prefix}/r/masa19`}
+            href="/r/masa19"
             className="rounded-full bg-foreground px-4 py-2 text-xs font-medium text-background transition hover:scale-[1.02]"
           >
             {nav.liveDemo}
           </Link>
           <Link
-            href={`${prefix}/admin/masa19`}
+            href="/admin/masa19"
             className="rounded-full border border-border px-4 py-2 text-xs font-medium transition hover:border-accent/50 hover:text-accent"
           >
             {nav.dashboard}
-          </Link>
-          <Link
-            href={`${otherPrefix}/`}
-            className="rounded-full px-3 py-2 text-xs font-medium text-muted transition hover:text-foreground"
-          >
-            {other.toUpperCase()}
           </Link>
         </div>
       </nav>
@@ -78,14 +69,14 @@ export default function LandingPage({ locale }: { locale: Locale }) {
             <p className="max-w-xl text-lg text-muted">{t.heroSubtitle}</p>
             <div className="flex flex-wrap items-center gap-3 pt-2">
               <Link
-                href={`${prefix}/r/masa19`}
+                href="/r/masa19"
                 className="group inline-flex items-center gap-2 rounded-full bg-foreground px-6 py-3 text-sm font-medium text-background transition hover:scale-[1.02]"
               >
                 {t.ctaPrimary}
                 <IconArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
               </Link>
               <Link
-                href={`${prefix}/admin/masa19`}
+                href="/admin/masa19"
                 className="rounded-full border border-border px-6 py-3 text-sm font-medium transition hover:border-accent/50 hover:text-accent"
               >
                 {t.ctaSecondary}
@@ -223,7 +214,7 @@ export default function LandingPage({ locale }: { locale: Locale }) {
                 ))}
               </ul>
               <Link
-                href={`${prefix}/admin/masa19`}
+                href="/admin/masa19"
                 className={`mt-6 rounded-full px-5 py-2.5 text-center text-sm font-medium transition hover:scale-[1.02] ${
                   tier.highlighted
                     ? "bg-foreground text-background"
@@ -248,13 +239,13 @@ export default function LandingPage({ locale }: { locale: Locale }) {
         <p className="max-w-xl text-muted">{t.closingBody}</p>
         <div className="flex flex-wrap items-center justify-center gap-3">
           <Link
-            href={`${prefix}/r/masa19`}
+            href="/r/masa19"
             className="rounded-full bg-foreground px-6 py-3 text-sm font-medium text-background transition hover:scale-[1.02]"
           >
             {t.ctaPrimary}
           </Link>
           <Link
-            href={`${prefix}/admin/masa19`}
+            href="/admin/masa19"
             className="rounded-full border border-border px-6 py-3 text-sm font-medium transition hover:border-accent/50 hover:text-accent"
           >
             {t.ctaSecondary}
