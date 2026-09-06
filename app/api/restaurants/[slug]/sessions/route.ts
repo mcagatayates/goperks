@@ -1,15 +1,15 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { assertRestaurantAccess } from "@/lib/auth";
 
 export async function GET(
   _request: Request,
   ctx: RouteContext<"/api/restaurants/[slug]/sessions">
 ) {
   const { slug } = await ctx.params;
-  const restaurant = await prisma.restaurant.findUnique({ where: { slug } });
-  if (!restaurant) {
-    return NextResponse.json({ error: "Restoran bulunamadı." }, { status: 404 });
-  }
+  const access = await assertRestaurantAccess(slug);
+  if (access instanceof NextResponse) return access;
+  const restaurant = access;
 
   const sessions = await prisma.conversationSession.findMany({
     where: { restaurantId: restaurant.id },

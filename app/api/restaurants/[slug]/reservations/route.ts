@@ -1,16 +1,16 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createReservation, ReservationError } from "@/lib/reservations";
+import { assertRestaurantAccess } from "@/lib/auth";
 
 export async function GET(
   request: Request,
   ctx: RouteContext<"/api/restaurants/[slug]/reservations">
 ) {
   const { slug } = await ctx.params;
-  const restaurant = await prisma.restaurant.findUnique({ where: { slug } });
-  if (!restaurant) {
-    return NextResponse.json({ error: "Restoran bulunamadı." }, { status: 404 });
-  }
+  const access = await assertRestaurantAccess(slug);
+  if (access instanceof NextResponse) return access;
+  const restaurant = access;
 
   const { searchParams } = new URL(request.url);
   const date = searchParams.get("date");
@@ -41,10 +41,9 @@ export async function POST(
   ctx: RouteContext<"/api/restaurants/[slug]/reservations">
 ) {
   const { slug } = await ctx.params;
-  const restaurant = await prisma.restaurant.findUnique({ where: { slug } });
-  if (!restaurant) {
-    return NextResponse.json({ error: "Restoran bulunamadı." }, { status: 404 });
-  }
+  const access = await assertRestaurantAccess(slug);
+  if (access instanceof NextResponse) return access;
+  const restaurant = access;
 
   const body = await request.json();
   const { date, time, partySize, customerName, customerPhone, notes } =
@@ -67,7 +66,7 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "date, time, partySize, customerName and customerPhone are required",
+          "date, time, partySize, customerName ve customerPhone alanları gereklidir.",
       },
       { status: 400 }
     );

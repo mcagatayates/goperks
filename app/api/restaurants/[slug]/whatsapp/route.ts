@@ -1,21 +1,21 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { isMetaConfigured } from "@/lib/whatsapp-onboarding";
+import { assertRestaurantAccess } from "@/lib/auth";
 
 export async function GET(
   _request: Request,
   ctx: RouteContext<"/api/restaurants/[slug]/whatsapp">
 ) {
   const { slug } = await ctx.params;
+  const access = await assertRestaurantAccess(slug);
+  if (access instanceof NextResponse) return access;
+
   const restaurant = await prisma.restaurant.findUnique({
     where: { slug },
     include: { whatsappConnection: true },
   });
-  if (!restaurant) {
-    return NextResponse.json({ error: "Restoran bulunamadı." }, { status: 404 });
-  }
-
-  const connection = restaurant.whatsappConnection;
+  const connection = restaurant?.whatsappConnection;
   return NextResponse.json({
     metaConfigured: isMetaConfigured(),
     connection: connection
@@ -33,10 +33,9 @@ export async function DELETE(
   ctx: RouteContext<"/api/restaurants/[slug]/whatsapp">
 ) {
   const { slug } = await ctx.params;
-  const restaurant = await prisma.restaurant.findUnique({ where: { slug } });
-  if (!restaurant) {
-    return NextResponse.json({ error: "Restoran bulunamadı." }, { status: 404 });
-  }
+  const access = await assertRestaurantAccess(slug);
+  if (access instanceof NextResponse) return access;
+  const restaurant = access;
 
   await prisma.whatsAppConnection.updateMany({
     where: { restaurantId: restaurant.id },

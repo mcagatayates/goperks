@@ -6,6 +6,7 @@ import {
   subscribeAppToWaba,
   WhatsAppOnboardingError,
 } from "@/lib/whatsapp-onboarding";
+import { assertRestaurantAccess } from "@/lib/auth";
 
 // Called by the dashboard's WhatsAppConnect component once Meta's Embedded
 // Signup popup has finished — see lib/whatsapp-onboarding.ts for the full
@@ -15,10 +16,9 @@ export async function POST(
   ctx: RouteContext<"/api/restaurants/[slug]/whatsapp/connect">
 ) {
   const { slug } = await ctx.params;
-  const restaurant = await prisma.restaurant.findUnique({ where: { slug } });
-  if (!restaurant) {
-    return NextResponse.json({ error: "Restoran bulunamadı." }, { status: 404 });
-  }
+  const access = await assertRestaurantAccess(slug);
+  if (access instanceof NextResponse) return access;
+  const restaurant = access;
 
   const body = await request.json();
   const { code, wabaId, phoneNumberId } = body as {

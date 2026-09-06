@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { assertRestaurantAccess } from "@/lib/auth";
 
 export async function PATCH(
   request: Request,
   ctx: RouteContext<"/api/restaurants/[slug]/menu-items/[id]">
 ) {
-  const { id } = await ctx.params;
+  const { slug, id } = await ctx.params;
+  const access = await assertRestaurantAccess(slug);
+  if (access instanceof NextResponse) return access;
+
   const body = await request.json();
   const { name, description, price, category, isSpecial, isAvailable } =
     body as {
@@ -43,7 +47,10 @@ export async function DELETE(
   _request: Request,
   ctx: RouteContext<"/api/restaurants/[slug]/menu-items/[id]">
 ) {
-  const { id } = await ctx.params;
+  const { slug, id } = await ctx.params;
+  const access = await assertRestaurantAccess(slug);
+  if (access instanceof NextResponse) return access;
+
   await prisma.menuItem.delete({ where: { id } });
   return NextResponse.json({ success: true });
 }

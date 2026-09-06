@@ -25,14 +25,32 @@ model Restaurant {
   openTime                  String // "12:00"
   closeTime                 String // "23:00"
   reservationDurationMinutes Int     @default(90)
+  // The seeded "masa19" restaurant that the landing page's "Canlı demo" /
+  // "Restoran panelini gör" links point to — its admin dashboard stays open
+  // without login so visitors can try it, unlike every real signed-up
+  // restaurant. See lib/auth.ts's assertRestaurantAccess().
+  isDemo                    Boolean  @default(false)
   createdAt                 DateTime @default(now())
   updatedAt                 DateTime @updatedAt
 
+  owner     User?
   tables    RestaurantTable[]
   menuItems MenuItem[]
   reservations Reservation[]
   sessions  ConversationSession[]
   whatsappConnection WhatsAppConnection?
+  waitlistEntries WaitlistEntry[]
+}
+
+// One owner account per restaurant for now — the dashboard has no
+// multi-user/role concept yet, just "logged in as this restaurant or not".
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  restaurantId String   @unique
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
+  createdAt    DateTime @default(now())
 }
 
 // A restaurant's own WhatsApp Business phone number, connected through
@@ -132,9 +150,32 @@ model ConversationSession {
 
   messages     ConversationMessage[]
   reservations Reservation[]
+  waitlistEntries WaitlistEntry[]
 
   @@index([restaurantId])
   @@index([externalId])
+}
+
+// status: "waiting" | "notified" | "seated" | "cancelled" | "expired"
+// Created when check_availability finds nothing free for the requested
+// slot and the guest asks to be added to the waitlist instead.
+model WaitlistEntry {
+  id            String   @id @default(cuid())
+  restaurantId  String
+  restaurant    Restaurant @relation(fields: [restaurantId], references: [id])
+  sessionId     String?
+  session       ConversationSession? @relation(fields: [sessionId], references: [id])
+  customerName  String
+  customerPhone String
+  partySize     Int
+  requestedDate String // "YYYY-MM-DD"
+  requestedTime String // "HH:MM"
+  status        String   @default("waiting")
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([restaurantId, requestedDate])
 }
 
 // role: "user" | "assistant"

@@ -214,7 +214,7 @@ export default function LandingPage() {
                 ))}
               </ul>
               <Link
-                href="/admin/masa19"
+                href="/kayit"
                 className={`mt-6 rounded-full px-5 py-2.5 text-center text-sm font-medium transition hover:scale-[1.02] ${
                   tier.highlighted
                     ? "bg-foreground text-background"

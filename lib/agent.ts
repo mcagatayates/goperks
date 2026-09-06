@@ -109,6 +109,10 @@ const tools: Anthropic.Tool[] = [
     description:
       "Get the restaurant's address, phone number, opening hours and description.",
     input_schema: { type: "object", properties: {} },
+    // Tool definitions never change between requests — caching the last one
+    // caches the whole array, so it's read from cache instead of billed as
+    // fresh input on every turn (and every iteration of the tool loop below).
+    cache_control: { type: "ephemeral" },
   },
 ];
 
@@ -119,8 +123,8 @@ function systemPrompt(restaurant: {
   phone: string;
   openTime: string;
   closeTime: string;
-}) {
-  return `You are the AI reservations concierge for "${restaurant.name}", a restaurant.
+}): Anthropic.TextBlockParam[] {
+  const text = `You are the AI reservations concierge for "${restaurant.name}", a restaurant.
 Restaurant info: ${restaurant.description}
 Address: ${restaurant.address}. Phone: ${restaurant.phone}.
 Open hours: ${restaurant.openTime}-${restaurant.closeTime}, every day.
@@ -133,6 +137,11 @@ Your job:
 - Reply in the same language the guest is writing in.
 - Be warm, concise, and efficient — guests are often booking on the go.
 - Never invent availability, menu items, or reservation details — always use the tools.`;
+
+  // Same restaurant row -> identical system prompt on every turn of every
+  // conversation, so cache it — it's rebuilt from the database each call but
+  // the cache key is the content itself, not object identity.
+  return [{ type: "text", text, cache_control: { type: "ephemeral" } }];
 }
 
 type ChatTurnResult = {
@@ -151,13 +160,30 @@ export async function runAgentTurn(params: {
     where: { id: params.restaurantId },
   });
 
-  const messages: Anthropic.MessageParam[] = [
-    ...params.history.map((m) => ({
-      role: m.role,
-      content: m.content,
-    })),
-    { role: "user" as const, content: params.userMessage },
-  ];
+  const messages: Anthropic.MessageParam[] = params.history.map((m) => ({
+    role: m.role,
+    content: m.content,
+  }));
+
+  // Cache everything before the newest message: on a long conversation, the
+  // history re-sent every turn is otherwise billed as fresh input every
+  // time. The breakpoint moves forward each turn since it's set on what is,
+  // at that moment, the last message of the prior conversation.
+  const lastHistoryMessage = messages[messages.length - 1];
+  if (lastHistoryMessage) {
+    lastHistoryMessage.content = [
+      {
+        type: "text",
+        text:
+          typeof lastHistoryMessage.content === "string"
+            ? lastHistoryMessage.content
+            : "",
+        cache_control: { type: "ephemeral" },
+      },
+    ];
+  }
+
+  messages.push({ role: "user", content: params.userMessage });
 
   const toolCalls: ChatTurnResult["toolCalls"] = [];
 

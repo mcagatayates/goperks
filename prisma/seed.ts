@@ -3,18 +3,21 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 async function main() {
+  await prisma.waitlistEntry.deleteMany();
   await prisma.reservation.deleteMany();
   await prisma.conversationMessage.deleteMany();
   await prisma.conversationSession.deleteMany();
   await prisma.menuItem.deleteMany();
   await prisma.restaurantTable.deleteMany();
   await prisma.whatsAppConnection.deleteMany();
+  await prisma.user.deleteMany();
   await prisma.restaurant.deleteMany();
 
   const restaurant = await prisma.restaurant.create({
     data: {
       slug: "masa19",
       name: "Masa19",
+      isDemo: true,
       description:
         "İstanbul'un kalbinde, mevsimsel ve malzeme odaklı bir menüyle modern Türk mutfağı. Sıcak bir salon ve canlı bir açık teras.",
       address: "Bogazkesen Cad. No:19, Beyoglu, Istanbul",

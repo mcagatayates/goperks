@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   useEffect,
   useState,
@@ -86,23 +87,43 @@ function EmptyState({ icon, message }: { icon: ReactNode; message: string }) {
 export default function AdminDashboard({
   slug,
   restaurantName,
+  ownerEmail,
 }: {
   slug: string;
   restaurantName: string;
+  ownerEmail: string | null;
 }) {
   const t = dictionary.admin;
+  const router = useRouter();
   const [tab, setTab] = useState<
     "reservations" | "menu" | "conversations" | "settings"
   >("reservations");
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-6 px-6 py-12">
-      <Link
-        href="/"
-        className="font-display text-xs font-medium tracking-tight text-muted hover:text-accent"
-      >
-        {t.dashboardLabel}
-      </Link>
+      <div className="flex items-center justify-between gap-3">
+        <Link
+          href="/"
+          className="font-display text-xs font-medium tracking-tight text-muted hover:text-accent"
+        >
+          {t.dashboardLabel}
+        </Link>
+        {ownerEmail && (
+          <div className="flex items-center gap-3 text-xs text-muted">
+            <span>{ownerEmail}</span>
+            <button
+              onClick={async () => {
+                await fetch("/api/auth/logout", { method: "POST" });
+                router.push("/");
+                router.refresh();
+              }}
+              className="hover:text-foreground"
+            >
+              {t.logout}
+            </button>
+          </div>
+        )}
+      </div>
 
       <h1 className="font-display text-3xl tracking-tight">
         {restaurantName}
