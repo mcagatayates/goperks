@@ -126,16 +126,56 @@ The same agent logic drives two channels today:
 
 - **Web chat** — `POST /api/chat`, used by the `ChatWidget` component embedded
   on the restaurant page.
-- **WhatsApp** — `POST /api/webhooks/whatsapp`. This is fully wired up but
-  ships in "stubbed send" mode: without `WHATSAPP_PHONE_NUMBER_ID` /
-  `WHATSAPP_ACCESS_TOKEN` set, replies are logged to the server console
-  instead of actually sent over WhatsApp. See `lib/channels/whatsapp.ts` for
-  the three steps to go live with a real WhatsApp Business number. The
-  webhook is currently single-tenant (routes every message to the restaurant
-  named by `WHATSAPP_RESTAURANT_SLUG`) — a real multi-restaurant deployment
-  would map the inbound WhatsApp phone number ID to a restaurant instead.
+- **WhatsApp** — `POST /api/webhooks/whatsapp`, multi-tenant: it looks up the
+  restaurant by the inbound message's `phone_number_id` (via the
+  `WhatsAppConnection` model) rather than a single global number, so one
+  deployment can serve many restaurants' own WhatsApp Business numbers.
+  Without a real access token stored for a restaurant, replies are logged to
+  the server console instead of actually sent (see `lib/channels/whatsapp.ts`).
 
 Voice (phone) is not implemented in this MVP — see "What's next" below.
+
+## WhatsApp self-service onboarding
+
+The dashboard's Settings tab has a "Connect WhatsApp" button meant to let a
+restaurant owner connect their own WhatsApp Business number themselves —
+no one from HeyTable has to touch their Meta account. This uses Meta's
+official **Embedded Signup** flow: a Facebook-Login-style popup where the
+restaurant picks or creates their WhatsApp Business Account, and we get back
+a `waba_id` + `phone_number_id` we can start messaging through immediately.
+
+**This has a real prerequisite that isn't just code**: to offer Embedded
+Signup at all, HeyTable itself must first be approved by Meta as a **Tech
+Provider** — a business-verification process on Meta's side (submitting the
+company's legal/business details, then an app review for the
+`whatsapp_business_management` / `whatsapp_business_messaging` permissions).
+That's a one-time step for the whole product, done once by HeyTable, not
+per restaurant — but it can't be done from this codebase; it's an
+application you file at
+[developers.facebook.com](https://developers.facebook.com/documentation/business-messaging/whatsapp/solution-providers/get-started-for-tech-providers)
+and then wait on Meta's approval.
+
+What's already built and ready to go the moment that approval lands:
+
+- `prisma/schema.prisma`'s `WhatsAppConnection` model — one row per
+  restaurant, holding its own `phoneNumberId` / `wabaId` / access token.
+- `components/WhatsAppConnect.tsx` — the dashboard button. It loads the
+  Facebook JS SDK, drives `FB.login()` with your Embedded Signup
+  configuration, and posts the result to the connect endpoint below. Until
+  `META_APP_ID`/`META_APP_SECRET` are set, it shows a clear
+  "not configured yet" message instead of a broken button.
+- `lib/whatsapp-onboarding.ts` + `POST /api/restaurants/[slug]/whatsapp/connect`
+  — exchanges the signup code for an access token, subscribes HeyTable's
+  app to that WABA's webhooks, and stores the connection.
+- The webhook (`POST /api/webhooks/whatsapp`) already routes by
+  `phone_number_id`, so newly connected restaurants work with zero further
+  code changes.
+
+Once you have Tech Provider approval: create a Meta App with the WhatsApp
+product, create an Embedded Signup configuration under it, and set
+`META_APP_ID`, `META_APP_SECRET`, `NEXT_PUBLIC_META_APP_ID`, and
+`NEXT_PUBLIC_META_CONFIG_ID` (see `.env.example`) — the whole flow goes live
+without touching any of the code above.
 
 ## Switching SQLite → Postgres
 
@@ -159,18 +199,21 @@ app/
   admin/[slug]/page.tsx       staff dashboard (en)
   tr/admin/[slug]/page.tsx    staff dashboard (tr)
   api/chat/route.ts           web chat endpoint
-  api/webhooks/whatsapp/      WhatsApp Cloud API webhook
+  api/webhooks/whatsapp/      WhatsApp Cloud API webhook (multi-tenant)
   api/restaurants/[slug]/     reservations / tables / menu-items / sessions
-                              / restaurant data APIs
+                              / whatsapp connect+status / restaurant data APIs
 components/
   landing/LandingPage.tsx     landing page content, shared across locales
   RestaurantPageContent.tsx   restaurant page content, shared across locales
   ChatWidget.tsx              floating web chat widget (client component)
   AdminDashboard.tsx          staff dashboard UI (client component)
+  WhatsAppConnect.tsx         Embedded Signup "Connect WhatsApp" button
+  icons.tsx                   hand-authored line icon set
 lib/
   agent.ts                    Claude tool-use loop + system prompt
   reservations.ts             availability + reservation CRUD (core logic)
-  channels/whatsapp.ts         WhatsApp Cloud API adapter
+  channels/whatsapp.ts        WhatsApp Cloud API send/parse adapter
+  whatsapp-onboarding.ts      Embedded Signup token exchange + WABA subscribe
   i18n.ts                     en/tr UI dictionary
   prisma.ts, time.ts, types.ts
 prisma/

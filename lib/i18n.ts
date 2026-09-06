@@ -108,6 +108,7 @@ const en = {
       reservations: "Reservations",
       menu: "Menu & Specials",
       conversations: "Conversations",
+      settings: "Settings",
     },
     reservations: {
       dateLabel: "Date",
@@ -188,6 +189,22 @@ const en = {
       voice: "Voice",
       staff: "Staff",
     } satisfies Record<Channel, string>,
+    whatsapp: {
+      title: "WhatsApp",
+      description:
+        "Connect your own WhatsApp Business number — guests can message it directly and the AI concierge answers, same as web chat.",
+      notConfigured:
+        "This restaurant's HeyTable account isn't set up for WhatsApp yet. That's a one-time setup on our side (a Meta Tech Provider application), not something you need to do — ask us to enable it for your account.",
+      connectButton: "Connect WhatsApp",
+      connecting: "Connecting…",
+      connectedTo: (phone: string) => `Connected — ${phone}`,
+      disconnect: "Disconnect",
+      loading: "Loading…",
+      popupCancelled: "The connection popup was closed before finishing.",
+      missingWabaData:
+        "Meta didn't return the business account details — please try again.",
+      genericError: "Could not finish connecting WhatsApp.",
+    },
   },
 };
 
@@ -289,6 +306,7 @@ const tr: typeof en = {
       reservations: "Rezervasyonlar",
       menu: "Menü & Özel Yemekler",
       conversations: "Konuşmalar",
+      settings: "Ayarlar",
     },
     reservations: {
       dateLabel: "Tarih",
@@ -366,6 +384,22 @@ const tr: typeof en = {
       whatsapp: "WhatsApp",
       voice: "Sesli",
       staff: "Personel",
+    },
+    whatsapp: {
+      title: "WhatsApp",
+      description:
+        "Kendi WhatsApp Business numaranızı bağlayın — misafirler doğrudan yazabilir ve AI resepsiyonist, web sohbetinde olduğu gibi yanıt verir.",
+      notConfigured:
+        "Bu restoranın HeyTable hesabı henüz WhatsApp için ayarlanmamış. Bu bizim tarafımızda yapılan tek seferlik bir kurulum (Meta Tech Provider başvurusu) — sizin yapmanız gereken bir şey yok, hesabınız için aktifleştirmemizi isteyin.",
+      connectButton: "WhatsApp'ı Bağla",
+      connecting: "Bağlanıyor…",
+      connectedTo: (phone: string) => `Bağlı — ${phone}`,
+      disconnect: "Bağlantıyı kes",
+      loading: "Yükleniyor…",
+      popupCancelled: "Bağlantı penceresi tamamlanmadan kapatıldı.",
+      missingWabaData:
+        "Meta, işletme hesabı bilgilerini döndürmedi — lütfen tekrar deneyin.",
+      genericError: "WhatsApp bağlantısı tamamlanamadı.",
     },
   },
 };

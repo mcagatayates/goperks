@@ -14,6 +14,7 @@ import {
   IconChat,
   IconPlus,
 } from "@/components/icons";
+import WhatsAppConnect from "@/components/WhatsAppConnect";
 
 type Table = { id: string; name: string; capacity: number; isActive: boolean };
 type MenuItem = {
@@ -92,9 +93,9 @@ export default function AdminDashboard({
   locale: Locale;
 }) {
   const t = dictionaries[locale].admin;
-  const [tab, setTab] = useState<"reservations" | "menu" | "conversations">(
-    "reservations"
-  );
+  const [tab, setTab] = useState<
+    "reservations" | "menu" | "conversations" | "settings"
+  >("reservations");
 
   const other = otherLocale(locale);
   const otherHref = other === "en" ? `/admin/${slug}` : `/tr/admin/${slug}`;
@@ -120,6 +121,7 @@ export default function AdminDashboard({
             ["reservations", t.tabs.reservations],
             ["menu", t.tabs.menu],
             ["conversations", t.tabs.conversations],
+            ["settings", t.tabs.settings],
           ] as const
         ).map(([key, label]) => (
           <button
@@ -143,6 +145,7 @@ export default function AdminDashboard({
       {tab === "conversations" && (
         <ConversationsTab slug={slug} locale={locale} />
       )}
+      {tab === "settings" && <WhatsAppConnect slug={slug} locale={locale} />}
     </main>
   );
 }

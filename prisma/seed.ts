@@ -8,6 +8,7 @@ async function main() {
   await prisma.conversationSession.deleteMany();
   await prisma.menuItem.deleteMany();
   await prisma.restaurantTable.deleteMany();
+  await prisma.whatsAppConnection.deleteMany();
   await prisma.restaurant.deleteMany();
 
   const restaurant = await prisma.restaurant.create({

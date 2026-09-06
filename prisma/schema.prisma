@@ -32,6 +32,35 @@ model Restaurant {
   menuItems MenuItem[]
   reservations Reservation[]
   sessions  ConversationSession[]
+  whatsappConnection WhatsAppConnection?
+}
+
+// A restaurant's own WhatsApp Business phone number, connected through
+// Meta's Embedded Signup flow (see lib/whatsapp-onboarding.ts) rather than
+// the single shared WHATSAPP_* env vars used by the earlier single-tenant
+// stub. `phoneNumberId` is what the inbound webhook uses to route a message
+// to the right restaurant; `accessToken` is the system-user token minted
+// for that restaurant's WABA during signup.
+//
+// accessToken is stored in plaintext here because this is a local SQLite
+// dev database — a production/Postgres deployment must encrypt it at rest
+// (e.g. with a KMS-backed field-level encryption) before going live.
+//
+// status: "pending" | "connected" | "disconnected"
+model WhatsAppConnection {
+  id                 String   @id @default(cuid())
+  restaurantId       String   @unique
+  restaurant         Restaurant @relation(fields: [restaurantId], references: [id])
+  wabaId             String
+  phoneNumberId      String   @unique
+  displayPhoneNumber String
+  accessToken        String
+  status             String   @default("pending")
+  connectedAt        DateTime?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([phoneNumberId])
 }
 
 model RestaurantTable {

@@ -1,26 +1,25 @@
 // Thin adapter around the WhatsApp Business Cloud API (Meta Graph API).
-// The chat logic itself (lib/agent.ts) is channel-agnostic — this file is
-// the only place that needs to change to go from "stubbed" to "live".
+// The chat logic itself (lib/agent.ts) is channel-agnostic — this file only
+// speaks the Cloud API's message format.
 //
-// To go live:
-// 1. Create a Meta App + WhatsApp product, get a phone number ID and a
-//    permanent access token.
-// 2. Set WHATSAPP_PHONE_NUMBER_ID, WHATSAPP_ACCESS_TOKEN and
-//    WHATSAPP_VERIFY_TOKEN in .env.
-// 3. Point the app's webhook URL at POST /api/webhooks/whatsapp and verify
-//    it using WHATSAPP_VERIFY_TOKEN (see the GET handler in that route).
+// Credentials are per-restaurant (see prisma schema's WhatsAppConnection,
+// populated by lib/whatsapp-onboarding.ts's Embedded Signup flow) rather
+// than a single global env var — a HeyTable deployment serves many
+// restaurants, each with their own WhatsApp Business number.
 
-export async function sendWhatsAppMessage(to: string, text: string) {
-  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
-  const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
-
-  if (!phoneNumberId || !accessToken) {
+export async function sendWhatsAppMessage(
+  to: string,
+  text: string,
+  phoneNumberId: string,
+  accessToken: string
+) {
+  if (!accessToken) {
     console.log(`[whatsapp:stub] would send to ${to}: ${text}`);
     return { stubbed: true };
   }
 
   const response = await fetch(
-    `https://graph.facebook.com/v20.0/${phoneNumberId}/messages`,
+    `https://graph.facebook.com/v21.0/${phoneNumberId}/messages`,
     {
       method: "POST",
       headers: {
@@ -47,11 +46,14 @@ export async function sendWhatsAppMessage(to: string, text: string) {
 export type WhatsAppInboundMessage = {
   from: string;
   text: string;
+  phoneNumberId: string;
 };
 
 // Parses the subset of the Meta Cloud API webhook payload we care about:
-// a single incoming text message. Returns null for anything else (status
-// updates, non-text messages, etc.) so the caller can just no-op.
+// a single incoming text message, plus the destination phone_number_id
+// (which restaurant's WhatsApp number this arrived on). Returns null for
+// anything else (status updates, non-text messages, etc.) so the caller
+// can just no-op.
 export function parseWhatsAppWebhookPayload(
   payload: unknown
 ): WhatsAppInboundMessage | null {
@@ -60,14 +62,19 @@ export function parseWhatsAppWebhookPayload(
       entry?: {
         changes?: {
           value?: {
+            metadata?: { phone_number_id?: string };
             messages?: { from: string; type: string; text?: { body: string } }[];
           };
         }[];
       }[];
     };
-    const message = body.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
-    if (!message || message.type !== "text" || !message.text) return null;
-    return { from: message.from, text: message.text.body };
+    const value = body.entry?.[0]?.changes?.[0]?.value;
+    const message = value?.messages?.[0];
+    const phoneNumberId = value?.metadata?.phone_number_id;
+    if (!message || message.type !== "text" || !message.text || !phoneNumberId) {
+      return null;
+    }
+    return { from: message.from, text: message.text.body, phoneNumberId };
   } catch {
     return null;
   }

@@ -21,12 +21,9 @@ export async function GET(request: Request) {
   return new Response("Forbidden", { status: 403 });
 }
 
-// Single-tenant stub: every inbound message is routed to this restaurant.
-// A production version would resolve the restaurant from the destination
-// WhatsApp phone number ID (`entry[0].changes[0].value.metadata.phone_number_id`)
-// mapped in a "whatsapp number -> restaurant" table.
-const STUB_RESTAURANT_SLUG = process.env.WHATSAPP_RESTAURANT_SLUG ?? "masa19";
-
+// One webhook URL serves every restaurant on HeyTable — Meta always
+// includes the destination phone_number_id in the payload, which is how we
+// know which restaurant's WhatsAppConnection (and access token) to use.
 export async function POST(request: Request) {
   const payload = await request.json();
   const inbound = parseWhatsAppWebhookPayload(payload);
@@ -36,12 +33,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true });
   }
 
-  const restaurant = await prisma.restaurant.findUnique({
-    where: { slug: STUB_RESTAURANT_SLUG },
+  const connection = await prisma.whatsAppConnection.findUnique({
+    where: { phoneNumberId: inbound.phoneNumberId },
+    include: { restaurant: true },
   });
-  if (!restaurant) {
-    return NextResponse.json({ error: "Restaurant not found" }, { status: 404 });
+
+  // No restaurant has connected this number (or it was disconnected) —
+  // nothing to do, but still acknowledge so Meta doesn't retry forever.
+  if (!connection || connection.status !== "connected") {
+    return NextResponse.json({ ok: true });
   }
+
+  const restaurant = connection.restaurant;
 
   let session = await prisma.conversationSession.findFirst({
     where: {
@@ -70,22 +73,34 @@ export async function POST(request: Request) {
     data: { sessionId: session.id, role: "user", content: inbound.text },
   });
 
-  const { reply } = await runAgentTurn({
-    restaurantId: restaurant.id,
-    sessionId: session.id,
-    history: history.map((m) => ({
-      role: m.role as "user" | "assistant",
-      content: m.content,
-    })),
-    userMessage: inbound.text,
-    channel: "whatsapp",
-  });
+  try {
+    const { reply } = await runAgentTurn({
+      restaurantId: restaurant.id,
+      sessionId: session.id,
+      history: history.map((m) => ({
+        role: m.role as "user" | "assistant",
+        content: m.content,
+      })),
+      userMessage: inbound.text,
+      channel: "whatsapp",
+    });
 
-  await prisma.conversationMessage.create({
-    data: { sessionId: session.id, role: "assistant", content: reply },
-  });
+    await prisma.conversationMessage.create({
+      data: { sessionId: session.id, role: "assistant", content: reply },
+    });
 
-  await sendWhatsAppMessage(inbound.from, reply);
+    await sendWhatsAppMessage(
+      inbound.from,
+      reply,
+      connection.phoneNumberId,
+      connection.accessToken
+    );
+  } catch (err) {
+    // Always ack Meta's webhook with 200 even when our own processing
+    // fails (e.g. no ANTHROPIC_API_KEY yet) — a non-200 here makes Meta
+    // retry the same message repeatedly.
+    console.error("WhatsApp agent turn failed", err);
+  }
 
   return NextResponse.json({ ok: true });
 }

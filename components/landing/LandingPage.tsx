@@ -1,5 +1,5 @@
 import Link from "next/link";
-import ChatPreview from "@/components/landing/ChatPreview";
+import PhoneMockup from "@/components/landing/PhoneMockup";
 import { dictionaries, otherLocale, type Locale } from "@/lib/i18n";
 import {
   IconArrowRight,
@@ -88,7 +88,7 @@ export default function LandingPage({ locale }: { locale: Locale }) {
           </div>
 
           <div className="animate-fade-up [animation-delay:150ms] flex justify-center md:justify-end">
-            <ChatPreview />
+            <PhoneMockup />
           </div>
         </div>
       </section>
