@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 
-type Table = { id: string; name: string; capacity: number };
+type Table = { id: string; name: string; capacity: number; isActive: boolean };
 type MenuItem = {
   id: string;
   name: string;
@@ -112,6 +112,13 @@ function ReservationsTab({ slug }: { slug: string }) {
   const [reservations, setReservations] = useState<Reservation[] | null>(
     null
   );
+  const [showForm, setShowForm] = useState(false);
+
+  function refresh() {
+    fetch(`/api/restaurants/${slug}/reservations?date=${date}`)
+      .then((res) => res.json())
+      .then((data) => setReservations(data.reservations ?? []));
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -141,17 +148,36 @@ function ReservationsTab({ slug }: { slug: string }) {
 
   return (
     <section className="flex flex-col gap-4">
-      <div className="flex items-center gap-3">
-        <label className="text-sm text-black/60 dark:text-white/60">
-          Date
-        </label>
-        <input
-          type="date"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-          className="rounded-lg border border-black/10 bg-transparent px-3 py-1.5 text-sm dark:border-white/15"
-        />
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <label className="text-sm text-black/60 dark:text-white/60">
+            Date
+          </label>
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className="rounded-lg border border-black/10 bg-transparent px-3 py-1.5 text-sm dark:border-white/15"
+          />
+        </div>
+        <button
+          onClick={() => setShowForm((v) => !v)}
+          className="rounded-full bg-neutral-900 px-4 py-2 text-xs font-medium text-white dark:bg-white dark:text-neutral-900"
+        >
+          {showForm ? "Cancel" : "+ New reservation"}
+        </button>
       </div>
+
+      {showForm && (
+        <NewReservationForm
+          slug={slug}
+          defaultDate={date}
+          onCreated={() => {
+            setShowForm(false);
+            refresh();
+          }}
+        />
+      )}
 
       {loading ? (
         <p className="text-sm text-black/50 dark:text-white/50">Loading…</p>
@@ -217,24 +243,200 @@ function ReservationsTab({ slug }: { slug: string }) {
   );
 }
 
+function NewReservationForm({
+  slug,
+  defaultDate,
+  onCreated,
+}: {
+  slug: string;
+  defaultDate: string;
+  onCreated: () => void;
+}) {
+  const [time, setTime] = useState("19:00");
+  const [partySize, setPartySize] = useState(2);
+  const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [notes, setNotes] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    setSubmitting(true);
+    setError(null);
+    const res = await fetch(`/api/restaurants/${slug}/reservations`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        date: defaultDate,
+        time,
+        partySize,
+        customerName,
+        customerPhone,
+        notes: notes || undefined,
+      }),
+    });
+    const data = await res.json();
+    setSubmitting(false);
+    if (!res.ok) {
+      setError(data.error ?? "Could not create the reservation.");
+      return;
+    }
+    onCreated();
+  }
+
+  return (
+    <form
+      onSubmit={submit}
+      className="flex flex-wrap items-end gap-3 rounded-xl border border-black/10 p-4 dark:border-white/10"
+    >
+      <Field label="Time">
+        <input
+          type="time"
+          required
+          value={time}
+          onChange={(e) => setTime(e.target.value)}
+          className="rounded-lg border border-black/10 bg-transparent px-2 py-1.5 text-sm dark:border-white/15"
+        />
+      </Field>
+      <Field label="Party size">
+        <input
+          type="number"
+          min={1}
+          required
+          value={partySize}
+          onChange={(e) => setPartySize(Number(e.target.value))}
+          className="w-20 rounded-lg border border-black/10 bg-transparent px-2 py-1.5 text-sm dark:border-white/15"
+        />
+      </Field>
+      <Field label="Guest name">
+        <input
+          required
+          value={customerName}
+          onChange={(e) => setCustomerName(e.target.value)}
+          className="rounded-lg border border-black/10 bg-transparent px-2 py-1.5 text-sm dark:border-white/15"
+        />
+      </Field>
+      <Field label="Phone">
+        <input
+          required
+          value={customerPhone}
+          onChange={(e) => setCustomerPhone(e.target.value)}
+          className="rounded-lg border border-black/10 bg-transparent px-2 py-1.5 text-sm dark:border-white/15"
+        />
+      </Field>
+      <Field label="Notes">
+        <input
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="optional"
+          className="rounded-lg border border-black/10 bg-transparent px-2 py-1.5 text-sm dark:border-white/15"
+        />
+      </Field>
+      <button
+        type="submit"
+        disabled={submitting}
+        className="rounded-full bg-neutral-900 px-4 py-2 text-xs font-medium text-white disabled:opacity-40 dark:bg-white dark:text-neutral-900"
+      >
+        {submitting ? "Booking…" : "Book table"}
+      </button>
+      {error && (
+        <p className="w-full text-xs text-red-600 dark:text-red-400">
+          {error}
+        </p>
+      )}
+    </form>
+  );
+}
+
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <label className="flex flex-col gap-1 text-xs text-black/60 dark:text-white/60">
+      {label}
+      {children}
+    </label>
+  );
+}
+
 function MenuTab({ slug }: { slug: string }) {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [tables, setTables] = useState<Table[]>([]);
+  const [showTableForm, setShowTableForm] = useState(false);
+  const [showItemForm, setShowItemForm] = useState(false);
 
-  useEffect(() => {
+  function refresh() {
     fetch(`/api/restaurants/${slug}`)
       .then((r) => r.json())
       .then((data) => {
         setMenuItems(data.restaurant?.menuItems ?? []);
         setTables(data.restaurant?.tables ?? []);
       });
+  }
+
+  useEffect(() => {
+    refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug]);
+
+  async function patchTable(id: string, patch: Partial<Table>) {
+    await fetch(`/api/restaurants/${slug}/tables/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+    });
+    refresh();
+  }
+
+  async function patchMenuItem(
+    id: string,
+    patch: Partial<Pick<MenuItem, "isSpecial" | "isAvailable" | "price">>
+  ) {
+    await fetch(`/api/restaurants/${slug}/menu-items/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+    });
+    refresh();
+  }
+
+  async function deleteMenuItem(id: string) {
+    if (!confirm("Remove this item from the menu?")) return;
+    await fetch(`/api/restaurants/${slug}/menu-items/${id}`, {
+      method: "DELETE",
+    });
+    refresh();
+  }
 
   return (
     <section className="grid gap-6 sm:grid-cols-2">
       <div>
-        <h2 className="mb-3 font-semibold">Menu & specials</h2>
-        <ul className="flex flex-col gap-2">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="font-semibold">Menu & specials</h2>
+          <button
+            onClick={() => setShowItemForm((v) => !v)}
+            className="rounded-full border border-black/15 px-3 py-1 text-xs font-medium dark:border-white/20"
+          >
+            {showItemForm ? "Cancel" : "+ Add item"}
+          </button>
+        </div>
+
+        {showItemForm && (
+          <NewMenuItemForm
+            slug={slug}
+            onCreated={() => {
+              setShowItemForm(false);
+              refresh();
+            }}
+          />
+        )}
+
+        <ul className="mt-3 flex flex-col gap-2">
           {menuItems.map((item) => (
             <li
               key={item.id}
@@ -246,40 +448,260 @@ function MenuTab({ slug }: { slug: string }) {
                   ₺{item.price}
                 </span>
               </div>
-              <div className="mt-1 flex gap-2 text-xs text-black/50 dark:text-white/50">
+              <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-black/50 dark:text-white/50">
                 <span className="capitalize">{item.category}</span>
-                {item.isSpecial && (
-                  <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-amber-700 dark:text-amber-400">
-                    special
-                  </span>
-                )}
-                {!item.isAvailable && (
-                  <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-red-700 dark:text-red-400">
-                    unavailable
-                  </span>
-                )}
+                <label className="flex items-center gap-1">
+                  <input
+                    type="checkbox"
+                    checked={item.isSpecial}
+                    onChange={(e) =>
+                      patchMenuItem(item.id, { isSpecial: e.target.checked })
+                    }
+                  />
+                  special
+                </label>
+                <label className="flex items-center gap-1">
+                  <input
+                    type="checkbox"
+                    checked={item.isAvailable}
+                    onChange={(e) =>
+                      patchMenuItem(item.id, { isAvailable: e.target.checked })
+                    }
+                  />
+                  available
+                </label>
+                <button
+                  onClick={() => deleteMenuItem(item.id)}
+                  className="text-red-600 hover:underline dark:text-red-400"
+                >
+                  remove
+                </button>
               </div>
             </li>
           ))}
         </ul>
       </div>
       <div>
-        <h2 className="mb-3 font-semibold">Tables</h2>
-        <ul className="flex flex-col gap-2">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="font-semibold">Tables</h2>
+          <button
+            onClick={() => setShowTableForm((v) => !v)}
+            className="rounded-full border border-black/15 px-3 py-1 text-xs font-medium dark:border-white/20"
+          >
+            {showTableForm ? "Cancel" : "+ Add table"}
+          </button>
+        </div>
+
+        {showTableForm && (
+          <NewTableForm
+            slug={slug}
+            onCreated={() => {
+              setShowTableForm(false);
+              refresh();
+            }}
+          />
+        )}
+
+        <ul className="mt-3 flex flex-col gap-2">
           {tables.map((t) => (
             <li
               key={t.id}
-              className="flex items-center justify-between rounded-lg border border-black/10 px-3 py-2 text-sm dark:border-white/10"
+              className="flex items-center justify-between gap-3 rounded-lg border border-black/10 px-3 py-2 text-sm dark:border-white/10"
             >
               <span>{t.name}</span>
-              <span className="text-black/50 dark:text-white/50">
-                seats {t.capacity}
-              </span>
+              <div className="flex items-center gap-3">
+                <label className="flex items-center gap-1 text-xs text-black/50 dark:text-white/50">
+                  seats
+                  <input
+                    type="number"
+                    min={1}
+                    defaultValue={t.capacity}
+                    onBlur={(e) => {
+                      const capacity = Number(e.target.value);
+                      if (capacity !== t.capacity && capacity >= 1) {
+                        patchTable(t.id, { capacity });
+                      }
+                    }}
+                    className="w-14 rounded-lg border border-black/10 bg-transparent px-1.5 py-1 text-sm dark:border-white/15"
+                  />
+                </label>
+                <label className="flex items-center gap-1 text-xs text-black/50 dark:text-white/50">
+                  <input
+                    type="checkbox"
+                    checked={t.isActive}
+                    onChange={(e) =>
+                      patchTable(t.id, { isActive: e.target.checked })
+                    }
+                  />
+                  active
+                </label>
+              </div>
             </li>
           ))}
         </ul>
       </div>
     </section>
+  );
+}
+
+function NewTableForm({
+  slug,
+  onCreated,
+}: {
+  slug: string;
+  onCreated: () => void;
+}) {
+  const [name, setName] = useState("");
+  const [capacity, setCapacity] = useState(2);
+  const [error, setError] = useState<string | null>(null);
+
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    const res = await fetch(`/api/restaurants/${slug}/tables`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, capacity }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      setError(data.error ?? "Could not add the table.");
+      return;
+    }
+    onCreated();
+  }
+
+  return (
+    <form
+      onSubmit={submit}
+      className="mb-3 flex flex-wrap items-end gap-3 rounded-xl border border-black/10 p-3 dark:border-white/10"
+    >
+      <Field label="Name">
+        <input
+          required
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="T9"
+          className="w-24 rounded-lg border border-black/10 bg-transparent px-2 py-1.5 text-sm dark:border-white/15"
+        />
+      </Field>
+      <Field label="Capacity">
+        <input
+          type="number"
+          min={1}
+          required
+          value={capacity}
+          onChange={(e) => setCapacity(Number(e.target.value))}
+          className="w-20 rounded-lg border border-black/10 bg-transparent px-2 py-1.5 text-sm dark:border-white/15"
+        />
+      </Field>
+      <button
+        type="submit"
+        className="rounded-full bg-neutral-900 px-4 py-2 text-xs font-medium text-white dark:bg-white dark:text-neutral-900"
+      >
+        Add table
+      </button>
+      {error && (
+        <p className="w-full text-xs text-red-600 dark:text-red-400">
+          {error}
+        </p>
+      )}
+    </form>
+  );
+}
+
+function NewMenuItemForm({
+  slug,
+  onCreated,
+}: {
+  slug: string;
+  onCreated: () => void;
+}) {
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [price, setPrice] = useState(0);
+  const [category, setCategory] = useState("main");
+  const [isSpecial, setIsSpecial] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    const res = await fetch(`/api/restaurants/${slug}/menu-items`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, description, price, category, isSpecial }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      setError(data.error ?? "Could not add the item.");
+      return;
+    }
+    onCreated();
+  }
+
+  return (
+    <form
+      onSubmit={submit}
+      className="mb-3 flex flex-wrap items-end gap-3 rounded-xl border border-black/10 p-3 dark:border-white/10"
+    >
+      <Field label="Name">
+        <input
+          required
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className="rounded-lg border border-black/10 bg-transparent px-2 py-1.5 text-sm dark:border-white/15"
+        />
+      </Field>
+      <Field label="Category">
+        <select
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+          className="rounded-lg border border-black/10 bg-transparent px-2 py-1.5 text-sm dark:border-white/15"
+        >
+          <option value="starter">starter</option>
+          <option value="main">main</option>
+          <option value="dessert">dessert</option>
+          <option value="drink">drink</option>
+        </select>
+      </Field>
+      <Field label="Price (₺)">
+        <input
+          type="number"
+          min={0}
+          required
+          value={price}
+          onChange={(e) => setPrice(Number(e.target.value))}
+          className="w-24 rounded-lg border border-black/10 bg-transparent px-2 py-1.5 text-sm dark:border-white/15"
+        />
+      </Field>
+      <Field label="Description">
+        <input
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          className="rounded-lg border border-black/10 bg-transparent px-2 py-1.5 text-sm dark:border-white/15"
+        />
+      </Field>
+      <label className="flex items-center gap-1 pb-1.5 text-xs text-black/60 dark:text-white/60">
+        <input
+          type="checkbox"
+          checked={isSpecial}
+          onChange={(e) => setIsSpecial(e.target.checked)}
+        />
+        special
+      </label>
+      <button
+        type="submit"
+        className="rounded-full bg-neutral-900 px-4 py-2 text-xs font-medium text-white dark:bg-white dark:text-neutral-900"
+      >
+        Add item
+      </button>
+      {error && (
+        <p className="w-full text-xs text-red-600 dark:text-red-400">
+          {error}
+        </p>
+      )}
+    </form>
   );
 }
 

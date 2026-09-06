@@ -18,6 +18,22 @@ async function getRestaurantOrThrow(restaurantId: string) {
   return restaurant;
 }
 
+function assertNotPastDate(date: string) {
+  // Calendar-day comparison only (not exact hour) — see the timezone
+  // simplification documented in lib/time.ts, which makes hour-level
+  // comparisons against the real clock unreliable.
+  const todayStr = new Date().toISOString().slice(0, 10);
+  if (date < todayStr) {
+    throw new ReservationError("Cannot book a reservation for a past date.");
+  }
+}
+
+function assertValidPartySize(partySize: number) {
+  if (!Number.isInteger(partySize) || partySize < 1) {
+    throw new ReservationError("Party size must be at least 1.");
+  }
+}
+
 function assertWithinOpeningHours(
   restaurant: { openTime: string; closeTime: string },
   startsAt: Date,
@@ -42,6 +58,8 @@ export async function findAvailableTables(params: {
   partySize: number;
   excludeReservationId?: string;
 }) {
+  assertValidPartySize(params.partySize);
+  assertNotPastDate(params.date);
   const restaurant = await getRestaurantOrThrow(params.restaurantId);
   const startsAt = combineDateAndTime(params.date, params.time);
   const durationMinutes = restaurant.reservationDurationMinutes;
@@ -94,6 +112,13 @@ export async function createReservation(params: {
   notes?: string;
   channel?: Channel;
 }) {
+  if (!params.customerName.trim()) {
+    throw new ReservationError("Guest name is required.");
+  }
+  if (!params.customerPhone.trim()) {
+    throw new ReservationError("Guest phone number is required.");
+  }
+
   const { restaurant, startsAt, durationMinutes, availableTables } =
     await findAvailableTables({
       restaurantId: params.restaurantId,

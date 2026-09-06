@@ -5,7 +5,9 @@ export type ReservationStatus =
   | "completed"
   | "no_show";
 
-export type Channel = "web" | "whatsapp" | "voice";
+// "staff" = entered directly in the dashboard (phone call taken by the
+// host, or a walk-in) rather than through an AI conversation.
+export type Channel = "web" | "whatsapp" | "voice" | "staff";
 
 export type MessageRole = "user" | "assistant";
 
@@ -17,4 +19,4 @@ export const RESERVATION_STATUSES: ReservationStatus[] = [
   "no_show",
 ];
 
-export const CHANNELS: Channel[] = ["web", "whatsapp", "voice"];
+export const CHANNELS: Channel[] = ["web", "whatsapp", "voice", "staff"];

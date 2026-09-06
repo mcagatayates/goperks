@@ -36,8 +36,10 @@ Visit:
 - `http://localhost:3000` — marketing landing page
 - `http://localhost:3000/r/masa19` — the demo restaurant's public page, with
   the AI chat widget in the corner
-- `http://localhost:3000/admin/masa19` — restaurant staff dashboard
-  (reservations, menu & specials, conversation transcripts)
+- `http://localhost:3000/admin/masa19` — restaurant staff dashboard:
+  reservations (with a manual "+ New reservation" form for walk-ins/phone
+  bookings), menu & specials and tables (both fully editable — add, edit,
+  toggle, delete), and conversation transcripts
 
 Without `ANTHROPIC_API_KEY` set, every other part of the app works (pages,
 reservation CRUD, dashboard) but the chat widget will return a clear error
@@ -59,7 +61,19 @@ double-book a table or promise a slot that doesn't exist.
 Availability is slot-based: each reservation occupies a table for
 `reservationDurationMinutes` (default 90) starting at the requested time;
 `findAvailableTables` filters tables by capacity and rejects any that overlap
-an existing `pending`/`confirmed` reservation.
+an existing `pending`/`confirmed` reservation. `lib/reservations.ts` also
+rejects past dates, non-positive party sizes, and reservations without a
+name/phone — these guards apply to every caller (the AI agent, the manual
+dashboard form, and the API directly).
+
+## Dashboard-only bookings
+
+Not every reservation goes through the AI — a phone call answered by a host,
+or a walk-in, is entered directly in the dashboard's "+ New reservation"
+form. These are tagged with `channel: "staff"` (as opposed to `"web"` /
+`"whatsapp"` / `"voice"` for AI-driven bookings) but go through the exact
+same availability engine, so they can never double-book a table the AI
+already holds, or vice versa.
 
 ## Channels
 
@@ -98,7 +112,8 @@ app/
   admin/[slug]/page.tsx       staff dashboard
   api/chat/route.ts           web chat endpoint
   api/webhooks/whatsapp/      WhatsApp Cloud API webhook
-  api/restaurants/[slug]/     reservations / sessions / restaurant data APIs
+  api/restaurants/[slug]/     reservations / tables / menu-items / sessions
+                              / restaurant data APIs
 components/
   ChatWidget.tsx              floating web chat widget (client component)
   AdminDashboard.tsx          staff dashboard UI (client component)
