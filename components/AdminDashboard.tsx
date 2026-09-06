@@ -38,6 +38,15 @@ type Reservation = {
   notes: string | null;
   table: Table | null;
 };
+type WaitlistEntry = {
+  id: string;
+  customerName: string;
+  customerPhone: string;
+  partySize: number;
+  requestedTime: string;
+  status: string;
+  notes: string | null;
+};
 type SessionSummary = {
   id: string;
   channel: string;
@@ -67,6 +76,14 @@ const STATUS_COLORS: Record<string, string> = {
   cancelled: "bg-red-500/15 text-red-700 dark:text-red-400",
   completed: "bg-blue-500/15 text-blue-700 dark:text-blue-400",
   no_show: "bg-neutral-500/15 text-neutral-700 dark:text-neutral-400",
+};
+
+const WAITLIST_STATUS_OPTIONS = ["waiting", "seated", "cancelled"] as const;
+
+const WAITLIST_STATUS_COLORS: Record<string, string> = {
+  waiting: "bg-yellow-500/15 text-yellow-700 dark:text-yellow-400",
+  seated: "bg-green-500/15 text-green-700 dark:text-green-400",
+  cancelled: "bg-red-500/15 text-red-700 dark:text-red-400",
 };
 
 function today() {
@@ -166,12 +183,16 @@ function ReservationsTab({ slug }: { slug: string }) {
   const [reservations, setReservations] = useState<Reservation[] | null>(
     null
   );
+  const [waitlist, setWaitlist] = useState<WaitlistEntry[] | null>(null);
   const [showForm, setShowForm] = useState(false);
 
   function refresh() {
     fetch(`/api/restaurants/${slug}/reservations?date=${date}`)
       .then((res) => res.json())
       .then((data) => setReservations(data.reservations ?? []));
+    fetch(`/api/restaurants/${slug}/waitlist?date=${date}`)
+      .then((res) => res.json())
+      .then((data) => setWaitlist(data.entries ?? []));
   }
 
   useEffect(() => {
@@ -180,6 +201,11 @@ function ReservationsTab({ slug }: { slug: string }) {
       .then((res) => res.json())
       .then((data) => {
         if (!cancelled) setReservations(data.reservations ?? []);
+      });
+    fetch(`/api/restaurants/${slug}/waitlist?date=${date}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!cancelled) setWaitlist(data.entries ?? []);
       });
     return () => {
       cancelled = true;
@@ -194,6 +220,17 @@ function ReservationsTab({ slug }: { slug: string }) {
       (prev) => prev?.map((r) => (r.id === id ? { ...r, status } : r)) ?? null
     );
     await fetch(`/api/restaurants/${slug}/reservations/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
+  }
+
+  async function updateWaitlistEntryStatus(id: string, status: string) {
+    setWaitlist(
+      (prev) => prev?.map((w) => (w.id === id ? { ...w, status } : w)) ?? null
+    );
+    await fetch(`/api/restaurants/${slug}/waitlist/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
@@ -296,6 +333,53 @@ function ReservationsTab({ slug }: { slug: string }) {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {waitlist && waitlist.length > 0 && (
+        <div>
+          <h3 className="mb-2 text-sm font-semibold">{t.waitlist.title}</h3>
+          <div className="overflow-x-auto rounded-xl border border-border">
+            <table className="w-full text-sm">
+              <thead className="bg-surface text-left text-xs uppercase tracking-wide text-muted">
+                <tr>
+                  <th className="px-4 py-2">{t.waitlist.colTime}</th>
+                  <th className="px-4 py-2">{t.waitlist.colGuest}</th>
+                  <th className="px-4 py-2">{t.waitlist.colParty}</th>
+                  <th className="px-4 py-2">{t.waitlist.colStatus}</th>
+                  <th className="px-4 py-2">{t.waitlist.colNotes}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {waitlist.map((w) => (
+                  <tr key={w.id} className="border-t border-border">
+                    <td className="px-4 py-2 tabular-nums">{w.requestedTime}</td>
+                    <td className="px-4 py-2">
+                      <div>{w.customerName}</div>
+                      <div className="text-xs text-muted">{w.customerPhone}</div>
+                    </td>
+                    <td className="px-4 py-2 tabular-nums">{w.partySize}</td>
+                    <td className="px-4 py-2">
+                      <select
+                        value={w.status}
+                        onChange={(e) =>
+                          updateWaitlistEntryStatus(w.id, e.target.value)
+                        }
+                        className={`rounded-full border-0 px-2 py-1 text-xs font-medium ${WAITLIST_STATUS_COLORS[w.status] ?? ""}`}
+                      >
+                        {WAITLIST_STATUS_OPTIONS.map((s) => (
+                          <option key={s} value={s}>
+                            {t.waitlist.statusLabels[s]}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="px-4 py-2 text-muted">{w.notes ?? ""}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </section>

@@ -208,6 +208,20 @@ export const dictionary = {
       submitting: "Ayırtılıyor…",
       genericError: "Rezervasyon oluşturulamadı.",
     },
+    waitlist: {
+      title: "Bekleme listesi",
+      empty: "Bu tarih için bekleme listesi yok.",
+      colTime: "Saat",
+      colGuest: "Misafir",
+      colParty: "Kişi",
+      colNotes: "Not",
+      colStatus: "Durum",
+      statusLabels: {
+        waiting: "Bekliyor",
+        seated: "Oturdu",
+        cancelled: "İptal edildi",
+      },
+    },
     menu: {
       menuTitle: "Menü & özel yemekler",
       addItemButton: "Ürün ekle",

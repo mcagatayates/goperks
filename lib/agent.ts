@@ -8,6 +8,7 @@ import {
   modifyReservation,
   ReservationError,
 } from "@/lib/reservations";
+import { addToWaitlist, WaitlistError } from "@/lib/waitlist";
 import type { Channel } from "@/lib/types";
 
 const MODEL = "claude-sonnet-5";
@@ -91,6 +92,23 @@ const tools: Anthropic.Tool[] = [
     },
   },
   {
+    name: "join_waitlist",
+    description:
+      "Add the guest to the waitlist for a specific date/time when check_availability found nothing free and no nearby alternative time worked either. Only call after the guest explicitly agrees to be waitlisted.",
+    input_schema: {
+      type: "object",
+      properties: {
+        date: { type: "string", description: "Date in YYYY-MM-DD format" },
+        time: { type: "string", description: "Time in 24h HH:MM format" },
+        partySize: { type: "integer" },
+        customerName: { type: "string" },
+        customerPhone: { type: "string" },
+        notes: { type: "string" },
+      },
+      required: ["date", "time", "partySize", "customerName", "customerPhone"],
+    },
+  },
+  {
     name: "get_specials",
     description:
       "Get today's chef specials and highlighted menu items to suggest to the guest.",
@@ -133,7 +151,7 @@ Your job:
 - Help guests book, change, or cancel a table reservation.
 - Always confirm date, time, party size, name and phone number back to the guest before calling create_reservation.
 - Proactively mention relevant chef specials once, when it feels natural (e.g. right after confirming a booking), using get_specials. Don't be pushy.
-- If a requested time has no availability, offer the closest alternative times by checking nearby slots.
+- If a requested time has no availability, offer the closest alternative times by checking nearby slots. If nothing nearby works either, offer to add the guest to the waitlist for their original date/time using join_waitlist.
 - Reply in the same language the guest is writing in.
 - Be warm, concise, and efficient — guests are often booking on the go.
 - Never invent availability, menu items, or reservation details — always use the tools.`;
@@ -316,6 +334,19 @@ async function executeTool(
           table: reservation.table?.name,
         };
       }
+      case "join_waitlist": {
+        const entry = await addToWaitlist({
+          restaurantId,
+          sessionId,
+          date: String(args.date),
+          time: String(args.time),
+          partySize: Number(args.partySize),
+          customerName: String(args.customerName),
+          customerPhone: String(args.customerPhone),
+          notes: args.notes ? String(args.notes) : undefined,
+        });
+        return { success: true, waitlistId: entry.id };
+      }
       case "get_specials": {
         const specials = await prisma.menuItem.findMany({
           where: { restaurantId, isSpecial: true, isAvailable: true },
@@ -345,7 +376,7 @@ async function executeTool(
         return { error: `Unknown tool: ${name}` };
     }
   } catch (err) {
-    if (err instanceof ReservationError) {
+    if (err instanceof ReservationError || err instanceof WaitlistError) {
       return { error: err.message };
     }
     return { error: "Something went wrong handling that request." };
