@@ -2,7 +2,9 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import RestaurantPageContent from "@/components/RestaurantPageContent";
 
-export default async function RestaurantPage(props: PageProps<"/r/[slug]">) {
+export default async function RestaurantPageTr(
+  props: PageProps<"/tr/r/[slug]">
+) {
   const { slug } = await props.params;
 
   const restaurant = await prisma.restaurant.findUnique({
@@ -12,5 +14,5 @@ export default async function RestaurantPage(props: PageProps<"/r/[slug]">) {
 
   if (!restaurant) notFound();
 
-  return <RestaurantPageContent restaurant={restaurant} locale="en" />;
+  return <RestaurantPageContent restaurant={restaurant} locale="tr" />;
 }

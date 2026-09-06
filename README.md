@@ -45,6 +45,35 @@ Without `ANTHROPIC_API_KEY` set, every other part of the app works (pages,
 reservation CRUD, dashboard) but the chat widget will return a clear error
 instead of a reply.
 
+Every page above also has a Turkish counterpart at the same paths under
+`/tr` (e.g. `/tr`, `/tr/r/masa19`, `/tr/admin/masa19`), with an EN/TR link in
+each page's header to switch between them. See "Localization" below.
+
+## Localization
+
+`lib/i18n.ts` holds the full UI dictionary for both locales. The English
+dictionary (`en`) is the source of truth; the Turkish one (`tr`) is typed as
+`typeof en`, so a missing translation key is a compile error, not a silent
+fallback to English text. Covers the landing page, the restaurant page, the
+chat widget, and the admin dashboard (including reservation status and
+channel display labels).
+
+This only localizes the app's own UI chrome — not restaurant-specific
+content (name, description, menu item names/descriptions), which is stored
+once in the database regardless of locale. The AI concierge itself doesn't
+need any of this: it already replies in whichever language the guest writes
+in, by design of its system prompt.
+
+Routes are duplicated per locale rather than using a `[locale]` dynamic
+segment, to keep the existing English routes untouched:
+
+- `/`, `/r/[slug]`, `/admin/[slug]` — English (default)
+- `/tr`, `/tr/r/[slug]`, `/tr/admin/[slug]` — Turkish
+
+Both variants render the same shared components (`LandingPage`,
+`RestaurantPageContent`, `AdminDashboard`, `ChatWidget`) with a `locale`
+prop — no page has its own copy of the UI logic.
+
 ## How the agent works
 
 `lib/agent.ts` runs a Claude tool-use loop against six tools backed directly
@@ -107,20 +136,26 @@ Postgres:
 
 ```
 app/
-  page.tsx                    marketing landing page
-  r/[slug]/page.tsx           public restaurant page + chat widget
-  admin/[slug]/page.tsx       staff dashboard
+  page.tsx                    marketing landing page (en)
+  tr/page.tsx                 marketing landing page (tr)
+  r/[slug]/page.tsx           public restaurant page + chat widget (en)
+  tr/r/[slug]/page.tsx        public restaurant page + chat widget (tr)
+  admin/[slug]/page.tsx       staff dashboard (en)
+  tr/admin/[slug]/page.tsx    staff dashboard (tr)
   api/chat/route.ts           web chat endpoint
   api/webhooks/whatsapp/      WhatsApp Cloud API webhook
   api/restaurants/[slug]/     reservations / tables / menu-items / sessions
                               / restaurant data APIs
 components/
+  landing/LandingPage.tsx     landing page content, shared across locales
+  RestaurantPageContent.tsx   restaurant page content, shared across locales
   ChatWidget.tsx              floating web chat widget (client component)
   AdminDashboard.tsx          staff dashboard UI (client component)
 lib/
   agent.ts                    Claude tool-use loop + system prompt
   reservations.ts             availability + reservation CRUD (core logic)
   channels/whatsapp.ts         WhatsApp Cloud API adapter
+  i18n.ts                     en/tr UI dictionary
   prisma.ts, time.ts, types.ts
 prisma/
   schema.prisma, seed.ts

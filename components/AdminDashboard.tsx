@@ -1,6 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { dictionaries, otherLocale, type Locale } from "@/lib/i18n";
+import type { Channel, ReservationStatus } from "@/lib/types";
 
 type Table = { id: string; name: string; capacity: number; isActive: boolean };
 type MenuItem = {
@@ -38,7 +41,7 @@ type SessionDetail = {
   messages: { id: string; role: string; content: string; createdAt: string }[];
 };
 
-const STATUS_OPTIONS = [
+const STATUS_OPTIONS: ReservationStatus[] = [
   "pending",
   "confirmed",
   "cancelled",
@@ -61,29 +64,43 @@ function today() {
 export default function AdminDashboard({
   slug,
   restaurantName,
+  locale,
 }: {
   slug: string;
   restaurantName: string;
+  locale: Locale;
 }) {
+  const t = dictionaries[locale].admin;
   const [tab, setTab] = useState<"reservations" | "menu" | "conversations">(
     "reservations"
   );
 
+  const other = otherLocale(locale);
+  const otherHref = other === "en" ? `/admin/${slug}` : `/tr/admin/${slug}`;
+
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-6 px-6 py-12">
-      <header>
-        <p className="text-xs font-medium uppercase tracking-widest text-black/50 dark:text-white/50">
-          HeyTable dashboard
-        </p>
-        <h1 className="text-3xl font-semibold">{restaurantName}</h1>
+      <header className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-medium uppercase tracking-widest text-black/50 dark:text-white/50">
+            {t.dashboardLabel}
+          </p>
+          <h1 className="text-3xl font-semibold">{restaurantName}</h1>
+        </div>
+        <Link
+          href={otherHref}
+          className="rounded-full px-3 py-2 text-xs font-medium text-black/50 transition hover:text-black/80 dark:text-white/50 dark:hover:text-white/80"
+        >
+          {other.toUpperCase()}
+        </Link>
       </header>
 
       <nav className="flex gap-2 border-b border-black/10 pb-2 dark:border-white/10">
         {(
           [
-            ["reservations", "Reservations"],
-            ["menu", "Menu & Specials"],
-            ["conversations", "Conversations"],
+            ["reservations", t.tabs.reservations],
+            ["menu", t.tabs.menu],
+            ["conversations", t.tabs.conversations],
           ] as const
         ).map(([key, label]) => (
           <button
@@ -100,14 +117,19 @@ export default function AdminDashboard({
         ))}
       </nav>
 
-      {tab === "reservations" && <ReservationsTab slug={slug} />}
-      {tab === "menu" && <MenuTab slug={slug} />}
-      {tab === "conversations" && <ConversationsTab slug={slug} />}
+      {tab === "reservations" && (
+        <ReservationsTab slug={slug} locale={locale} />
+      )}
+      {tab === "menu" && <MenuTab slug={slug} locale={locale} />}
+      {tab === "conversations" && (
+        <ConversationsTab slug={slug} locale={locale} />
+      )}
     </main>
   );
 }
 
-function ReservationsTab({ slug }: { slug: string }) {
+function ReservationsTab({ slug, locale }: { slug: string; locale: Locale }) {
+  const t = dictionaries[locale].admin;
   const [date, setDate] = useState(today());
   const [reservations, setReservations] = useState<Reservation[] | null>(
     null
@@ -151,7 +173,7 @@ function ReservationsTab({ slug }: { slug: string }) {
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <label className="text-sm text-black/60 dark:text-white/60">
-            Date
+            {t.reservations.dateLabel}
           </label>
           <input
             type="date"
@@ -164,13 +186,14 @@ function ReservationsTab({ slug }: { slug: string }) {
           onClick={() => setShowForm((v) => !v)}
           className="rounded-full bg-neutral-900 px-4 py-2 text-xs font-medium text-white dark:bg-white dark:text-neutral-900"
         >
-          {showForm ? "Cancel" : "+ New reservation"}
+          {showForm ? t.reservations.cancelButton : t.reservations.newButton}
         </button>
       </div>
 
       {showForm && (
         <NewReservationForm
           slug={slug}
+          locale={locale}
           defaultDate={date}
           onCreated={() => {
             setShowForm(false);
@@ -180,23 +203,25 @@ function ReservationsTab({ slug }: { slug: string }) {
       )}
 
       {loading ? (
-        <p className="text-sm text-black/50 dark:text-white/50">Loading…</p>
+        <p className="text-sm text-black/50 dark:text-white/50">
+          {t.reservations.loading}
+        </p>
       ) : list.length === 0 ? (
         <p className="text-sm text-black/50 dark:text-white/50">
-          No reservations for this date.
+          {t.reservations.empty}
         </p>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-black/10 dark:border-white/10">
           <table className="w-full text-sm">
             <thead className="bg-black/[0.03] text-left text-xs uppercase tracking-wide text-black/50 dark:bg-white/[0.04] dark:text-white/50">
               <tr>
-                <th className="px-4 py-2">Time</th>
-                <th className="px-4 py-2">Guest</th>
-                <th className="px-4 py-2">Party</th>
-                <th className="px-4 py-2">Table</th>
-                <th className="px-4 py-2">Channel</th>
-                <th className="px-4 py-2">Status</th>
-                <th className="px-4 py-2">Notes</th>
+                <th className="px-4 py-2">{t.reservations.colTime}</th>
+                <th className="px-4 py-2">{t.reservations.colGuest}</th>
+                <th className="px-4 py-2">{t.reservations.colParty}</th>
+                <th className="px-4 py-2">{t.reservations.colTable}</th>
+                <th className="px-4 py-2">{t.reservations.colChannel}</th>
+                <th className="px-4 py-2">{t.reservations.colStatus}</th>
+                <th className="px-4 py-2">{t.reservations.colNotes}</th>
               </tr>
             </thead>
             <tbody>
@@ -216,7 +241,9 @@ function ReservationsTab({ slug }: { slug: string }) {
                   </td>
                   <td className="px-4 py-2">{r.partySize}</td>
                   <td className="px-4 py-2">{r.table?.name ?? "—"}</td>
-                  <td className="px-4 py-2 capitalize">{r.channel}</td>
+                  <td className="px-4 py-2">
+                    {t.channelLabels[r.channel as Channel] ?? r.channel}
+                  </td>
                   <td className="px-4 py-2">
                     <select
                       value={r.status}
@@ -225,7 +252,7 @@ function ReservationsTab({ slug }: { slug: string }) {
                     >
                       {STATUS_OPTIONS.map((s) => (
                         <option key={s} value={s}>
-                          {s}
+                          {t.statusLabels[s]}
                         </option>
                       ))}
                     </select>
@@ -245,13 +272,16 @@ function ReservationsTab({ slug }: { slug: string }) {
 
 function NewReservationForm({
   slug,
+  locale,
   defaultDate,
   onCreated,
 }: {
   slug: string;
+  locale: Locale;
   defaultDate: string;
   onCreated: () => void;
 }) {
+  const t = dictionaries[locale].admin.newReservationForm;
   const [time, setTime] = useState("19:00");
   const [partySize, setPartySize] = useState(2);
   const [customerName, setCustomerName] = useState("");
@@ -279,7 +309,7 @@ function NewReservationForm({
     const data = await res.json();
     setSubmitting(false);
     if (!res.ok) {
-      setError(data.error ?? "Could not create the reservation.");
+      setError(data.error ?? t.genericError);
       return;
     }
     onCreated();
@@ -290,7 +320,7 @@ function NewReservationForm({
       onSubmit={submit}
       className="flex flex-wrap items-end gap-3 rounded-xl border border-black/10 p-4 dark:border-white/10"
     >
-      <Field label="Time">
+      <Field label={t.timeLabel}>
         <input
           type="time"
           required
@@ -299,7 +329,7 @@ function NewReservationForm({
           className="rounded-lg border border-black/10 bg-transparent px-2 py-1.5 text-sm dark:border-white/15"
         />
       </Field>
-      <Field label="Party size">
+      <Field label={t.partySizeLabel}>
         <input
           type="number"
           min={1}
@@ -309,7 +339,7 @@ function NewReservationForm({
           className="w-20 rounded-lg border border-black/10 bg-transparent px-2 py-1.5 text-sm dark:border-white/15"
         />
       </Field>
-      <Field label="Guest name">
+      <Field label={t.nameLabel}>
         <input
           required
           value={customerName}
@@ -317,7 +347,7 @@ function NewReservationForm({
           className="rounded-lg border border-black/10 bg-transparent px-2 py-1.5 text-sm dark:border-white/15"
         />
       </Field>
-      <Field label="Phone">
+      <Field label={t.phoneLabel}>
         <input
           required
           value={customerPhone}
@@ -325,11 +355,11 @@ function NewReservationForm({
           className="rounded-lg border border-black/10 bg-transparent px-2 py-1.5 text-sm dark:border-white/15"
         />
       </Field>
-      <Field label="Notes">
+      <Field label={t.notesLabel}>
         <input
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          placeholder="optional"
+          placeholder={t.notesPlaceholder}
           className="rounded-lg border border-black/10 bg-transparent px-2 py-1.5 text-sm dark:border-white/15"
         />
       </Field>
@@ -338,7 +368,7 @@ function NewReservationForm({
         disabled={submitting}
         className="rounded-full bg-neutral-900 px-4 py-2 text-xs font-medium text-white disabled:opacity-40 dark:bg-white dark:text-neutral-900"
       >
-        {submitting ? "Booking…" : "Book table"}
+        {submitting ? t.submitting : t.submit}
       </button>
       {error && (
         <p className="w-full text-xs text-red-600 dark:text-red-400">
@@ -349,13 +379,7 @@ function NewReservationForm({
   );
 }
 
-function Field({
-  label,
-  children,
-}: {
-  label: string;
-  children: ReactNode;
-}) {
+function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="flex flex-col gap-1 text-xs text-black/60 dark:text-white/60">
       {label}
@@ -364,7 +388,9 @@ function Field({
   );
 }
 
-function MenuTab({ slug }: { slug: string }) {
+function MenuTab({ slug, locale }: { slug: string; locale: Locale }) {
+  const t = dictionaries[locale].admin;
+  const categoryOptions = t.newMenuItemForm.categoryOptions;
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [tables, setTables] = useState<Table[]>([]);
   const [showTableForm, setShowTableForm] = useState(false);
@@ -406,7 +432,7 @@ function MenuTab({ slug }: { slug: string }) {
   }
 
   async function deleteMenuItem(id: string) {
-    if (!confirm("Remove this item from the menu?")) return;
+    if (!confirm(t.menu.confirmDelete)) return;
     await fetch(`/api/restaurants/${slug}/menu-items/${id}`, {
       method: "DELETE",
     });
@@ -417,18 +443,21 @@ function MenuTab({ slug }: { slug: string }) {
     <section className="grid gap-6 sm:grid-cols-2">
       <div>
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="font-semibold">Menu & specials</h2>
+          <h2 className="font-semibold">{t.menu.menuTitle}</h2>
           <button
             onClick={() => setShowItemForm((v) => !v)}
             className="rounded-full border border-black/15 px-3 py-1 text-xs font-medium dark:border-white/20"
           >
-            {showItemForm ? "Cancel" : "+ Add item"}
+            {showItemForm
+              ? t.reservations.cancelButton
+              : t.menu.addItemButton}
           </button>
         </div>
 
         {showItemForm && (
           <NewMenuItemForm
             slug={slug}
+            locale={locale}
             onCreated={() => {
               setShowItemForm(false);
               refresh();
@@ -449,7 +478,10 @@ function MenuTab({ slug }: { slug: string }) {
                 </span>
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-black/50 dark:text-white/50">
-                <span className="capitalize">{item.category}</span>
+                <span>
+                  {categoryOptions.find((c) => c.value === item.category)
+                    ?.label ?? item.category}
+                </span>
                 <label className="flex items-center gap-1">
                   <input
                     type="checkbox"
@@ -458,7 +490,7 @@ function MenuTab({ slug }: { slug: string }) {
                       patchMenuItem(item.id, { isSpecial: e.target.checked })
                     }
                   />
-                  special
+                  {t.menu.specialLabel}
                 </label>
                 <label className="flex items-center gap-1">
                   <input
@@ -468,13 +500,13 @@ function MenuTab({ slug }: { slug: string }) {
                       patchMenuItem(item.id, { isAvailable: e.target.checked })
                     }
                   />
-                  available
+                  {t.menu.availableLabel}
                 </label>
                 <button
                   onClick={() => deleteMenuItem(item.id)}
                   className="text-red-600 hover:underline dark:text-red-400"
                 >
-                  remove
+                  {t.menu.removeLabel}
                 </button>
               </div>
             </li>
@@ -483,18 +515,21 @@ function MenuTab({ slug }: { slug: string }) {
       </div>
       <div>
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="font-semibold">Tables</h2>
+          <h2 className="font-semibold">{t.menu.tablesTitle}</h2>
           <button
             onClick={() => setShowTableForm((v) => !v)}
             className="rounded-full border border-black/15 px-3 py-1 text-xs font-medium dark:border-white/20"
           >
-            {showTableForm ? "Cancel" : "+ Add table"}
+            {showTableForm
+              ? t.reservations.cancelButton
+              : t.menu.addTableButton}
           </button>
         </div>
 
         {showTableForm && (
           <NewTableForm
             slug={slug}
+            locale={locale}
             onCreated={() => {
               setShowTableForm(false);
               refresh();
@@ -503,23 +538,23 @@ function MenuTab({ slug }: { slug: string }) {
         )}
 
         <ul className="mt-3 flex flex-col gap-2">
-          {tables.map((t) => (
+          {tables.map((tbl) => (
             <li
-              key={t.id}
+              key={tbl.id}
               className="flex items-center justify-between gap-3 rounded-lg border border-black/10 px-3 py-2 text-sm dark:border-white/10"
             >
-              <span>{t.name}</span>
+              <span>{tbl.name}</span>
               <div className="flex items-center gap-3">
                 <label className="flex items-center gap-1 text-xs text-black/50 dark:text-white/50">
-                  seats
+                  {t.menu.seatsLabel}
                   <input
                     type="number"
                     min={1}
-                    defaultValue={t.capacity}
+                    defaultValue={tbl.capacity}
                     onBlur={(e) => {
                       const capacity = Number(e.target.value);
-                      if (capacity !== t.capacity && capacity >= 1) {
-                        patchTable(t.id, { capacity });
+                      if (capacity !== tbl.capacity && capacity >= 1) {
+                        patchTable(tbl.id, { capacity });
                       }
                     }}
                     className="w-14 rounded-lg border border-black/10 bg-transparent px-1.5 py-1 text-sm dark:border-white/15"
@@ -528,12 +563,12 @@ function MenuTab({ slug }: { slug: string }) {
                 <label className="flex items-center gap-1 text-xs text-black/50 dark:text-white/50">
                   <input
                     type="checkbox"
-                    checked={t.isActive}
+                    checked={tbl.isActive}
                     onChange={(e) =>
-                      patchTable(t.id, { isActive: e.target.checked })
+                      patchTable(tbl.id, { isActive: e.target.checked })
                     }
                   />
-                  active
+                  {t.menu.activeLabel}
                 </label>
               </div>
             </li>
@@ -546,11 +581,14 @@ function MenuTab({ slug }: { slug: string }) {
 
 function NewTableForm({
   slug,
+  locale,
   onCreated,
 }: {
   slug: string;
+  locale: Locale;
   onCreated: () => void;
 }) {
+  const t = dictionaries[locale].admin.newTableForm;
   const [name, setName] = useState("");
   const [capacity, setCapacity] = useState(2);
   const [error, setError] = useState<string | null>(null);
@@ -565,7 +603,7 @@ function NewTableForm({
     });
     const data = await res.json();
     if (!res.ok) {
-      setError(data.error ?? "Could not add the table.");
+      setError(data.error ?? t.genericError);
       return;
     }
     onCreated();
@@ -576,16 +614,16 @@ function NewTableForm({
       onSubmit={submit}
       className="mb-3 flex flex-wrap items-end gap-3 rounded-xl border border-black/10 p-3 dark:border-white/10"
     >
-      <Field label="Name">
+      <Field label={t.nameLabel}>
         <input
           required
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="T9"
+          placeholder={t.namePlaceholder}
           className="w-24 rounded-lg border border-black/10 bg-transparent px-2 py-1.5 text-sm dark:border-white/15"
         />
       </Field>
-      <Field label="Capacity">
+      <Field label={t.capacityLabel}>
         <input
           type="number"
           min={1}
@@ -599,7 +637,7 @@ function NewTableForm({
         type="submit"
         className="rounded-full bg-neutral-900 px-4 py-2 text-xs font-medium text-white dark:bg-white dark:text-neutral-900"
       >
-        Add table
+        {t.submit}
       </button>
       {error && (
         <p className="w-full text-xs text-red-600 dark:text-red-400">
@@ -612,15 +650,18 @@ function NewTableForm({
 
 function NewMenuItemForm({
   slug,
+  locale,
   onCreated,
 }: {
   slug: string;
+  locale: Locale;
   onCreated: () => void;
 }) {
+  const t = dictionaries[locale].admin.newMenuItemForm;
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState(0);
-  const [category, setCategory] = useState("main");
+  const [category, setCategory] = useState(t.categoryOptions[1].value);
   const [isSpecial, setIsSpecial] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -634,7 +675,7 @@ function NewMenuItemForm({
     });
     const data = await res.json();
     if (!res.ok) {
-      setError(data.error ?? "Could not add the item.");
+      setError(data.error ?? t.genericError);
       return;
     }
     onCreated();
@@ -645,7 +686,7 @@ function NewMenuItemForm({
       onSubmit={submit}
       className="mb-3 flex flex-wrap items-end gap-3 rounded-xl border border-black/10 p-3 dark:border-white/10"
     >
-      <Field label="Name">
+      <Field label={t.nameLabel}>
         <input
           required
           value={name}
@@ -653,19 +694,20 @@ function NewMenuItemForm({
           className="rounded-lg border border-black/10 bg-transparent px-2 py-1.5 text-sm dark:border-white/15"
         />
       </Field>
-      <Field label="Category">
+      <Field label={t.categoryLabel}>
         <select
           value={category}
           onChange={(e) => setCategory(e.target.value)}
           className="rounded-lg border border-black/10 bg-transparent px-2 py-1.5 text-sm dark:border-white/15"
         >
-          <option value="starter">starter</option>
-          <option value="main">main</option>
-          <option value="dessert">dessert</option>
-          <option value="drink">drink</option>
+          {t.categoryOptions.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
         </select>
       </Field>
-      <Field label="Price (₺)">
+      <Field label={t.priceLabel}>
         <input
           type="number"
           min={0}
@@ -675,7 +717,7 @@ function NewMenuItemForm({
           className="w-24 rounded-lg border border-black/10 bg-transparent px-2 py-1.5 text-sm dark:border-white/15"
         />
       </Field>
-      <Field label="Description">
+      <Field label={t.descriptionLabel}>
         <input
           value={description}
           onChange={(e) => setDescription(e.target.value)}
@@ -688,13 +730,13 @@ function NewMenuItemForm({
           checked={isSpecial}
           onChange={(e) => setIsSpecial(e.target.checked)}
         />
-        special
+        {t.specialLabel}
       </label>
       <button
         type="submit"
         className="rounded-full bg-neutral-900 px-4 py-2 text-xs font-medium text-white dark:bg-white dark:text-neutral-900"
       >
-        Add item
+        {t.submit}
       </button>
       {error && (
         <p className="w-full text-xs text-red-600 dark:text-red-400">
@@ -705,7 +747,14 @@ function NewMenuItemForm({
   );
 }
 
-function ConversationsTab({ slug }: { slug: string }) {
+function ConversationsTab({
+  slug,
+  locale,
+}: {
+  slug: string;
+  locale: Locale;
+}) {
+  const t = dictionaries[locale].admin;
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
   const [selected, setSelected] = useState<SessionDetail | null>(null);
 
@@ -726,7 +775,7 @@ function ConversationsTab({ slug }: { slug: string }) {
       <ul className="flex flex-col gap-2">
         {sessions.length === 0 && (
           <p className="text-sm text-black/50 dark:text-white/50">
-            No conversations yet.
+            {t.conversations.empty}
           </p>
         )}
         {sessions.map((s) => (
@@ -740,9 +789,11 @@ function ConversationsTab({ slug }: { slug: string }) {
               }`}
             >
               <div className="flex items-center justify-between">
-                <span className="font-medium capitalize">{s.channel}</span>
+                <span className="font-medium">
+                  {t.channelLabels[s.channel as Channel] ?? s.channel}
+                </span>
                 <span className="text-xs text-black/40 dark:text-white/40">
-                  {s._count.messages} msgs
+                  {s._count.messages} {t.conversations.msgsSuffix}
                 </span>
               </div>
               <p className="mt-1 truncate text-xs text-black/50 dark:text-white/50">
@@ -756,7 +807,7 @@ function ConversationsTab({ slug }: { slug: string }) {
       <div className="rounded-xl border border-black/10 p-4 dark:border-white/10">
         {!selected ? (
           <p className="text-sm text-black/50 dark:text-white/50">
-            Select a conversation to view the transcript.
+            {t.conversations.selectPrompt}
           </p>
         ) : (
           <div className="flex flex-col gap-3">

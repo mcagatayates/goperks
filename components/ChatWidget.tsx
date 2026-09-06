@@ -1,16 +1,20 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { dictionaries, type Locale } from "@/lib/i18n";
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
 
 export default function ChatWidget({
   restaurantSlug,
   restaurantName,
+  locale = "en",
 }: {
   restaurantSlug: string;
   restaurantName: string;
+  locale?: Locale;
 }) {
+  const t = dictionaries[locale].chat;
   const [open, setOpen] = useState(false);
   const storageKey = `heytable:session:${restaurantSlug}`;
   const [sessionId, setSessionId] = useState<string | null>(() => {
@@ -24,7 +28,7 @@ export default function ChatWidget({
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       role: "assistant",
-      content: `Hi! I'm the ${restaurantName} reservations concierge. I can book, change, or cancel a table for you — what would you like to do?`,
+      content: t.greeting(restaurantName),
     },
   ]);
   const [input, setInput] = useState("");
@@ -57,7 +61,7 @@ export default function ChatWidget({
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Something went wrong.");
+      if (!res.ok) throw new Error(data.error ?? t.genericError);
 
       setSessionId(data.sessionId);
       try {
@@ -70,7 +74,7 @@ export default function ChatWidget({
         { role: "assistant", content: data.reply },
       ]);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong.");
+      setError(err instanceof Error ? err.message : t.genericError);
     } finally {
       setLoading(false);
     }
@@ -83,10 +87,10 @@ export default function ChatWidget({
           <div className="flex items-center justify-between bg-neutral-900 px-4 py-3 text-white dark:bg-neutral-800">
             <div>
               <p className="text-sm font-semibold">{restaurantName}</p>
-              <p className="text-xs text-white/60">AI reservations concierge</p>
+              <p className="text-xs text-white/60">{t.headerSubtitle}</p>
             </div>
             <button
-              aria-label="Close chat"
+              aria-label={t.closeAria}
               onClick={() => setOpen(false)}
               className="text-white/70 hover:text-white"
             >
@@ -117,7 +121,7 @@ export default function ChatWidget({
             {loading && (
               <div className="flex justify-start">
                 <div className="max-w-[85%] rounded-2xl bg-black/5 px-3 py-2 text-sm text-black/50 dark:bg-white/10 dark:text-white/50">
-                  Typing…
+                  {t.typing}
                 </div>
               </div>
             )}
@@ -138,7 +142,7 @@ export default function ChatWidget({
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask about a table…"
+              placeholder={t.inputPlaceholder}
               className="flex-1 rounded-full border border-black/10 bg-transparent px-3 py-2 text-sm outline-none focus:border-black/30 dark:border-white/15 dark:focus:border-white/40"
             />
             <button
@@ -146,7 +150,7 @@ export default function ChatWidget({
               disabled={loading || !input.trim()}
               className="rounded-full bg-neutral-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-40 dark:bg-white dark:text-neutral-900"
             >
-              Send
+              {t.send}
             </button>
           </form>
         </div>
@@ -156,7 +160,7 @@ export default function ChatWidget({
         onClick={() => setOpen((v) => !v)}
         className="flex items-center gap-2 rounded-full bg-neutral-900 px-5 py-3 text-sm font-medium text-white shadow-lg transition hover:scale-[1.03] dark:bg-white dark:text-neutral-900"
       >
-        {open ? "Close" : "💬 Reserve a table"}
+        {open ? t.bubbleClose : t.bubbleOpen}
       </button>
     </div>
   );
