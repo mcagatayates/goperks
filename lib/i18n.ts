@@ -16,7 +16,6 @@ const en = {
     dashboard: "Dashboard",
   },
   landing: {
-    heroEyebrow: "AI concierge for restaurants",
     heroTitle: "Your restaurant's front desk, staffed by AI — 24/7",
     heroSubtitle:
       "HeyTable answers every reservation request on your website and WhatsApp, checks live table availability, confirms instantly, and suggests tonight's specials — so your team can focus on the dining room.",
@@ -47,32 +46,26 @@ const en = {
     featuresTitle: "Everything your front desk does — automated",
     features: [
       {
-        icon: "💬",
         title: "Web chat + WhatsApp",
         body: "The same AI concierge, wherever guests already are — no app to download.",
       },
       {
-        icon: "📅",
         title: "Real-time availability",
         body: "Every confirmation is checked against your actual tables — never double-booked.",
       },
       {
-        icon: "✏️",
         title: "Self-serve changes",
         body: "Guests reschedule or cancel by just asking — no phone call, no hold music.",
       },
       {
-        icon: "✨",
         title: "Smart upsell",
         body: "Surfaces the chef's specials and seasonal menu at the right moment in the conversation.",
       },
       {
-        icon: "🌍",
         title: "Multilingual by default",
         body: "Replies in whatever language the guest writes in — no configuration needed.",
       },
       {
-        icon: "📊",
         title: "One dashboard",
         body: "Reservations, tables, specials, and full conversation logs, all in one place.",
       },
@@ -104,7 +97,7 @@ const en = {
     inputPlaceholder: "Ask about a table…",
     send: "Send",
     typing: "Typing…",
-    bubbleOpen: "💬 Reserve a table",
+    bubbleOpen: "Reserve a table",
     bubbleClose: "Close",
     genericError: "Something went wrong.",
     closeAria: "Close chat",
@@ -118,7 +111,7 @@ const en = {
     },
     reservations: {
       dateLabel: "Date",
-      newButton: "+ New reservation",
+      newButton: "New reservation",
       cancelButton: "Cancel",
       loading: "Loading…",
       empty: "No reservations for this date.",
@@ -143,9 +136,9 @@ const en = {
     },
     menu: {
       menuTitle: "Menu & specials",
-      addItemButton: "+ Add item",
+      addItemButton: "Add item",
       tablesTitle: "Tables",
-      addTableButton: "+ Add table",
+      addTableButton: "Add table",
       specialLabel: "special",
       availableLabel: "available",
       removeLabel: "remove",
@@ -204,7 +197,6 @@ const tr: typeof en = {
     dashboard: "Panel",
   },
   landing: {
-    heroEyebrow: "Restoranlar için AI resepsiyonist",
     heroTitle: "Restoranınızın resepsiyonunda artık yapay zeka var — 7/24",
     heroSubtitle:
       "HeyTable, web siteniz ve WhatsApp üzerinden gelen her rezervasyon talebini yanıtlar, gerçek masa müsaitliğini kontrol eder, anında onaylar ve akşamın özel yemeklerini önerir — ekibiniz salona odaklanabilsin diye.",
@@ -235,32 +227,26 @@ const tr: typeof en = {
     featuresTitle: "Resepsiyonunuzun yaptığı her şey — otomatik",
     features: [
       {
-        icon: "💬",
         title: "Web sohbet + WhatsApp",
         body: "Aynı AI resepsiyonist, misafirlerin zaten bulunduğu her yerde — indirilecek bir uygulama yok.",
       },
       {
-        icon: "📅",
         title: "Gerçek zamanlı müsaitlik",
         body: "Her onay gerçek masalarınıza göre kontrol edilir — asla çift rezervasyon olmaz.",
       },
       {
-        icon: "✏️",
         title: "Kendi kendine değişiklik",
         body: "Misafirler sadece sorarak erteleyebilir veya iptal edebilir — telefon araması, bekleme müziği yok.",
       },
       {
-        icon: "✨",
         title: "Akıllı upsell",
         body: "Konuşmanın doğru anında şefin özel yemeklerini ve mevsimlik menüyü öne çıkarır.",
       },
       {
-        icon: "🌍",
         title: "Varsayılan olarak çok dilli",
         body: "Misafir hangi dilde yazarsa o dilde yanıt verir — ayar gerekmez.",
       },
       {
-        icon: "📊",
         title: "Tek panel",
         body: "Rezervasyonlar, masalar, özel yemekler ve tüm konuşma kayıtları tek bir yerde.",
       },
@@ -292,7 +278,7 @@ const tr: typeof en = {
     inputPlaceholder: "Masa hakkında sorun…",
     send: "Gönder",
     typing: "Yazıyor…",
-    bubbleOpen: "💬 Masa ayırt",
+    bubbleOpen: "Masa ayırt",
     bubbleClose: "Kapat",
     genericError: "Bir şeyler ters gitti.",
     closeAria: "Sohbeti kapat",
@@ -306,7 +292,7 @@ const tr: typeof en = {
     },
     reservations: {
       dateLabel: "Tarih",
-      newButton: "+ Yeni rezervasyon",
+      newButton: "Yeni rezervasyon",
       cancelButton: "Vazgeç",
       loading: "Yükleniyor…",
       empty: "Bu tarih için rezervasyon yok.",
@@ -331,9 +317,9 @@ const tr: typeof en = {
     },
     menu: {
       menuTitle: "Menü & özel yemekler",
-      addItemButton: "+ Ürün ekle",
+      addItemButton: "Ürün ekle",
       tablesTitle: "Masalar",
-      addTableButton: "+ Masa ekle",
+      addTableButton: "Masa ekle",
       specialLabel: "özel",
       availableLabel: "mevcut",
       removeLabel: "kaldır",

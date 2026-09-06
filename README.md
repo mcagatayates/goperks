@@ -19,6 +19,22 @@ layer for web + WhatsApp) so it can be iterated on.
   below to switch)
 - **Claude API** (`@anthropic-ai/sdk`) with tool use for the reservations agent
 
+## Design system
+
+`app/globals.css` defines the whole visual language as CSS custom properties
+— `--background`, `--foreground`, `--muted`, `--border`, `--surface`, and a
+warm terracotta `--accent` — each with a light and a `prefers-color-scheme:
+dark` value, exposed to Tailwind as `bg-background`, `text-muted`,
+`border-border`, `bg-accent-soft`, etc. Components should use these tokens
+rather than raw `black/10` or `dark:white/10` opacities, so light/dark
+theming stays centralized.
+
+Typography pairs Geist Sans (body/UI, `font-sans`) with a self-hosted
+Fraunces variable serif for display headings (`font-display`) — no page
+relies on the platform's default system font. `components/icons.tsx` holds
+a small hand-authored line-icon set (24×24, 1.5px stroke) used everywhere an
+icon is needed instead of emoji.
+
 ## Getting started
 
 ```bash

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { dictionaries, type Locale } from "@/lib/i18n";
+import { IconChat, IconClose, IconSend } from "@/components/icons";
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
 
@@ -82,84 +83,97 @@ export default function ChatWidget({
 
   return (
     <div className="fixed bottom-5 right-5 z-50 flex flex-col items-end gap-3">
-      {open && (
-        <div className="flex h-[32rem] w-[22rem] flex-col overflow-hidden rounded-2xl border border-black/10 bg-[var(--background)] shadow-2xl dark:border-white/10">
-          <div className="flex items-center justify-between bg-neutral-900 px-4 py-3 text-white dark:bg-neutral-800">
-            <div>
-              <p className="text-sm font-semibold">{restaurantName}</p>
-              <p className="text-xs text-white/60">{t.headerSubtitle}</p>
-            </div>
-            <button
-              aria-label={t.closeAria}
-              onClick={() => setOpen(false)}
-              className="text-white/70 hover:text-white"
-            >
-              ✕
-            </button>
+      <div
+        aria-hidden={!open}
+        className={`flex h-[32rem] w-[22rem] max-w-[calc(100vw-2.5rem)] origin-bottom-right flex-col overflow-hidden rounded-2xl bg-background shadow-[0_24px_60px_-12px_rgba(28,22,19,0.35)] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+          open
+            ? "translate-y-0 scale-100 opacity-100"
+            : "pointer-events-none translate-y-3 scale-95 opacity-0"
+        }`}
+      >
+        <div className="flex items-center justify-between bg-foreground px-4 py-3 text-background">
+          <div>
+            <p className="text-sm font-semibold">{restaurantName}</p>
+            <p className="text-xs text-background/60">{t.headerSubtitle}</p>
           </div>
-
-          <div
-            ref={scrollRef}
-            className="flex-1 space-y-3 overflow-y-auto px-3 py-3"
+          <button
+            aria-label={t.closeAria}
+            onClick={() => setOpen(false)}
+            className="text-background/70 transition hover:text-background"
           >
-            {messages.map((m, i) => (
-              <div
-                key={i}
-                className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
-              >
-                <div
-                  className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-sm ${
-                    m.role === "user"
-                      ? "bg-neutral-900 text-white dark:bg-neutral-700"
-                      : "bg-black/5 dark:bg-white/10"
-                  }`}
-                >
-                  {m.content}
-                </div>
-              </div>
-            ))}
-            {loading && (
-              <div className="flex justify-start">
-                <div className="max-w-[85%] rounded-2xl bg-black/5 px-3 py-2 text-sm text-black/50 dark:bg-white/10 dark:text-white/50">
-                  {t.typing}
-                </div>
-              </div>
-            )}
-            {error && (
-              <p className="rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-600 dark:text-red-400">
-                {error}
-              </p>
-            )}
-          </div>
-
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              sendMessage();
-            }}
-            className="flex gap-2 border-t border-black/10 p-3 dark:border-white/10"
-          >
-            <input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder={t.inputPlaceholder}
-              className="flex-1 rounded-full border border-black/10 bg-transparent px-3 py-2 text-sm outline-none focus:border-black/30 dark:border-white/15 dark:focus:border-white/40"
-            />
-            <button
-              type="submit"
-              disabled={loading || !input.trim()}
-              className="rounded-full bg-neutral-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-40 dark:bg-white dark:text-neutral-900"
-            >
-              {t.send}
-            </button>
-          </form>
+            <IconClose className="h-4 w-4" />
+          </button>
         </div>
-      )}
+
+        <div
+          ref={scrollRef}
+          className="flex-1 space-y-3 overflow-y-auto px-3 py-3"
+        >
+          {messages.map((m, i) => (
+            <div
+              key={i}
+              className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
+            >
+              <div
+                className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-sm ${
+                  m.role === "user"
+                    ? "bg-foreground text-background"
+                    : "bg-surface"
+                }`}
+              >
+                {m.content}
+              </div>
+            </div>
+          ))}
+          {loading && (
+            <div className="flex justify-start">
+              <div className="flex items-center gap-1 rounded-2xl bg-surface px-3 py-2.5">
+                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted [animation-delay:-0.3s]" />
+                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted [animation-delay:-0.15s]" />
+                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted" />
+              </div>
+            </div>
+          )}
+          {error && (
+            <p className="rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-600 dark:text-red-400">
+              {error}
+            </p>
+          )}
+        </div>
+
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            sendMessage();
+          }}
+          className="flex gap-2 border-t border-border p-3"
+        >
+          <input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder={t.inputPlaceholder}
+            className="flex-1 rounded-full border border-border bg-transparent px-3 py-2 text-sm outline-none transition focus:border-accent"
+          />
+          <button
+            type="submit"
+            disabled={loading || !input.trim()}
+            aria-label={t.send}
+            className="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-foreground text-background transition disabled:opacity-40"
+          >
+            <IconSend className="h-4 w-4" />
+          </button>
+        </form>
+      </div>
 
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-2 rounded-full bg-neutral-900 px-5 py-3 text-sm font-medium text-white shadow-lg transition hover:scale-[1.03] dark:bg-white dark:text-neutral-900"
+        className="flex items-center gap-2 rounded-full bg-foreground px-5 py-3 text-sm font-medium text-background shadow-lg transition hover:scale-[1.03]"
       >
+        {open ? (
+          <IconClose className="h-4 w-4" />
+        ) : (
+          <IconChat className="h-4 w-4" />
+        )}
         {open ? t.bubbleClose : t.bubbleOpen}
       </button>
     </div>
