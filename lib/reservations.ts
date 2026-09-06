@@ -271,6 +271,140 @@ export async function cancelReservation(reservationId: string) {
   return cancelled;
 }
 
+// Blocks a table for a booking that lives in the restaurant's *other*
+// reservation system, not one taken through HeyTable — pushed in via
+// POST /api/restaurants/[slug]/pos/external-bookings once a restaurant
+// wires up their existing POS/reservation software (or a Zapier/Make
+// bridge) to call it. This exists purely so our own availability engine
+// doesn't double-book a table their other system already holds; it
+// deliberately skips the guest SMS/email confirmation (we may not have a
+// real relationship with that guest) and skips re-firing the outbound POS
+// webhook (the event originated from their side — echoing it back out
+// would loop).
+export async function upsertExternalReservation(params: {
+  restaurantId: string;
+  externalId: string;
+  date: string;
+  time: string;
+  partySize: number;
+  tableName?: string;
+  customerName?: string;
+  customerPhone?: string;
+  notes?: string;
+}) {
+  assertValidPartySize(params.partySize);
+  assertNotPastDate(params.date);
+  const restaurant = await getRestaurantOrThrow(params.restaurantId);
+  const startsAt = combineDateAndTime(params.date, params.time);
+  const durationMinutes = restaurant.reservationDurationMinutes;
+  assertWithinOpeningHours(restaurant, startsAt, durationMinutes);
+  const endsAt = addMinutes(startsAt, durationMinutes);
+
+  const existing = await prisma.reservation.findFirst({
+    where: { restaurantId: params.restaurantId, externalId: params.externalId },
+  });
+
+  let tableId: string;
+
+  if (params.tableName) {
+    const table = await prisma.restaurantTable.findFirst({
+      where: {
+        restaurantId: params.restaurantId,
+        name: params.tableName,
+        isActive: true,
+      },
+    });
+    if (!table) {
+      throw new ReservationError(
+        `"${params.tableName}" adında aktif bir masa bulunamadı.`
+      );
+    }
+    if (table.capacity < params.partySize) {
+      throw new ReservationError(
+        `"${params.tableName}" masası ${params.partySize} kişi için yetersiz kapasitede.`
+      );
+    }
+
+    const dayStart = combineDateAndTime(params.date, "00:00");
+    const dayEnd = addMinutes(dayStart, 24 * 60);
+    const conflicting = await prisma.reservation.findMany({
+      where: {
+        restaurantId: params.restaurantId,
+        tableId: table.id,
+        status: { in: ["pending", "confirmed"] },
+        startsAt: { gte: dayStart, lt: dayEnd },
+        ...(existing ? { id: { not: existing.id } } : {}),
+      },
+    });
+    const overlap = conflicting.some((res) =>
+      rangesOverlap(
+        startsAt,
+        endsAt,
+        res.startsAt,
+        addMinutes(res.startsAt, res.durationMinutes)
+      )
+    );
+    if (overlap) {
+      throw new ReservationError(
+        `"${params.tableName}" masası bu saat için zaten dolu.`
+      );
+    }
+    tableId = table.id;
+  } else {
+    const { availableTables } = await findAvailableTables({
+      restaurantId: params.restaurantId,
+      date: params.date,
+      time: params.time,
+      partySize: params.partySize,
+      excludeReservationId: existing?.id,
+    });
+    if (availableTables.length === 0) {
+      throw new ReservationError(
+        "Bu tarih, saat ve kişi sayısı için uygun masa yok."
+      );
+    }
+    tableId = availableTables[0].id;
+  }
+
+  const data = {
+    restaurantId: params.restaurantId,
+    tableId,
+    externalId: params.externalId,
+    customerName: params.customerName?.trim() || "Dış sistem rezervasyonu",
+    customerPhone: params.customerPhone?.trim() || "-",
+    partySize: params.partySize,
+    startsAt,
+    durationMinutes,
+    status: "confirmed",
+    channel: "external",
+    notes: params.notes,
+  } as const;
+
+  return existing
+    ? prisma.reservation.update({
+        where: { id: existing.id },
+        data,
+        include: { table: true },
+      })
+    : prisma.reservation.create({ data, include: { table: true } });
+}
+
+export async function cancelExternalReservation(
+  restaurantId: string,
+  externalId: string
+) {
+  const existing = await prisma.reservation.findFirst({
+    where: { restaurantId, externalId },
+  });
+  if (!existing) {
+    throw new ReservationError("Dış sistem rezervasyonu bulunamadı.");
+  }
+  return prisma.reservation.update({
+    where: { id: existing.id },
+    data: { status: "cancelled" },
+  });
+}
+
 export async function findReservationForCustomer(params: {
   restaurantId: string;
   customerPhone: string;

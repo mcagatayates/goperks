@@ -118,7 +118,7 @@ model MenuItem {
 }
 
 // status: "pending" | "confirmed" | "cancelled" | "completed" | "no_show"
-// channel: "web" | "whatsapp" | "voice"
+// channel: "web" | "whatsapp" | "voice" | "staff" | "external"
 model Reservation {
   id           String   @id @default(cuid())
   restaurantId String
@@ -137,10 +137,16 @@ model Reservation {
   status        String  @default("pending")
   channel       String  @default("web")
   notes         String?
+  // Set only for channel:"external" — the other reservation system's own
+  // booking id, so a repeated push from that system updates this row
+  // instead of creating a duplicate. See lib/reservations.ts's
+  // upsertExternalReservation() and POST /api/restaurants/[slug]/pos/external-bookings.
+  externalId    String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@unique([restaurantId, externalId])
   @@index([restaurantId, startsAt])
   @@index([tableId])
 }

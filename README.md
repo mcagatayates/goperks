@@ -240,24 +240,51 @@ without touching any of the code above.
 
 No specific POS vendor (Toast, Square, OpenTable, a local Turkish POS) is
 integrated, since none is chosen yet — integrating one proprietary SDK
-blind isn't useful. Instead, `lib/pos.ts` offers a vendor-neutral two-way
-integration a restaurant opts into from the dashboard's Settings tab:
+blind isn't useful, and we don't yet know whether a given restaurant's
+current system even exposes an API. Instead, `lib/pos.ts` offers a
+vendor-neutral integration a restaurant opts into from the dashboard's
+Settings tab, in three directions, all authenticated with the same
+restaurant-scoped API key (`Authorization: Bearer <key>`, generated from
+Settings) rather than the owner's login session, since the caller in all
+three cases is a machine, not the dashboard:
 
-- **Push** — `notifyPosWebhook()` POSTs reservation/waitlist events
-  (`reservation.created`/`.updated`/`.cancelled`, `waitlist.created`) to a
-  URL the restaurant configures, signed with HMAC-SHA256 over the raw body
-  (`X-HeyTable-Signature` header) the same way Stripe/GitHub sign
+- **Outbound push** — `notifyPosWebhook()` POSTs reservation/waitlist
+  events (`reservation.created`/`.updated`/`.cancelled`, `waitlist.created`)
+  to a URL the restaurant configures, signed with HMAC-SHA256 over the raw
+  body (`X-HeyTable-Signature` header) the same way Stripe/GitHub sign
   webhooks, so their receiving end can verify it really came from
   HeyTable.
-- **Pull** — `GET /api/restaurants/[slug]/pos/reservations` lets their POS
-  (or a Zapier/Make bridge) poll current reservations, authenticated with
-  a restaurant-scoped API key (`Authorization: Bearer <key>`, generated
-  from Settings) rather than the owner's login session, since the caller
-  here is a machine, not the dashboard.
+- **Outbound pull** — `GET /api/restaurants/[slug]/pos/reservations` lets
+  their POS (or a Zapier/Make bridge) poll current reservations.
+- **Inbound occupancy sync** — `POST /api/restaurants/[slug]/pos/external-bookings`
+  is the reverse: a restaurant that's still using another reservation
+  system alongside HeyTable (mid-migration, or simply keeping both running)
+  can push *that* system's bookings in, so HeyTable's own availability
+  engine blocks the same tables and never double-books what the other
+  system already holds. `lib/reservations.ts`'s `upsertExternalReservation()`
+  either assigns a specific table (`tableName`, matched by name — useful
+  when the two systems' table numbering lines up) or auto-assigns like any
+  other booking; either way it runs through the exact same conflict check
+  as an AI or dashboard booking. Repeated pushes with the same `externalId`
+  update the same row instead of duplicating (`@@unique([restaurantId,
+  externalId])` on `Reservation`), and `DELETE .../pos/external-bookings/[externalId]`
+  releases the table when their side cancels. These rows show up in the
+  dashboard's Reservations tab tagged with a `"external"` channel
+  ("Dış sistem"), alongside AI/staff bookings — one unified view of
+  what's actually blocking a table tonight, regardless of source. They
+  deliberately skip the guest SMS/email confirmation (there may be no
+  real HeyTable relationship with that guest) and skip re-firing the
+  outbound webhook above (the event originated from their side; echoing
+  it back out would loop).
 
-Both directions are no-ops until the restaurant sets them up — no env vars
-needed, since the API key and webhook URL/secret are stored per-restaurant
-in the database rather than platform-wide config.
+All three directions are no-ops until the restaurant sets them up — no env
+vars needed, since the API key and webhook URL/secret are stored
+per-restaurant in the database rather than platform-wide config. Actually
+*pulling* live data out of a specific vendor's own system (rather than
+waiting for them to push into the endpoint above) needs that vendor's API
+docs and credentials, which aren't in hand for any vendor yet — this
+inbound endpoint is the landing point for whenever those are available, or
+for a no-code bridge (Zapier/Make) in the meantime.
 
 ## Switching SQLite → Postgres
 

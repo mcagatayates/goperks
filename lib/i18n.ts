@@ -275,6 +275,7 @@ export const dictionary = {
       whatsapp: "WhatsApp",
       voice: "Sesli",
       staff: "Personel",
+      external: "Dış sistem",
     } satisfies Record<Channel, string>,
     whatsapp: {
       title: "WhatsApp",
@@ -295,10 +296,10 @@ export const dictionary = {
     pos: {
       title: "POS / rezervasyon sistemi entegrasyonu",
       description:
-        "Kendi POS'unuzu veya rezervasyon sisteminizi bağlamak için API anahtarını ve webhook URL'sini kullanın.",
+        "Kendi POS'unuzu veya rezervasyon sisteminizi bağlamak için API anahtarını ve webhook URL'sini kullanın. Aynı anahtarla hem HeyTable'daki rezervasyonları çekebilir hem de POS'unuzdaki mevcut rezervasyonları buraya gönderip masaların dolu görünmesini sağlayabilirsiniz.",
       apiKeyLabel: "API anahtarı",
       apiKeyHint:
-        "POS'unuzun rezervasyonları çekmesi için Authorization: Bearer <anahtar> başlığında kullanın.",
+        "Authorization: Bearer <anahtar> başlığında kullanın — hem rezervasyonları çekmek (GET .../pos/reservations) hem de POS'unuzdaki mevcut rezervasyonları buraya göndermek (POST .../pos/external-bookings) için.",
       generateApiKey: "Anahtar oluştur",
       regenerateApiKey: "Anahtarı yenile",
       copy: "Kopyala",
