@@ -14,6 +14,35 @@ export async function GET(
 
   const { searchParams } = new URL(request.url);
   const date = searchParams.get("date");
+  const scope = searchParams.get("scope");
+  const q = searchParams.get("q")?.trim();
+
+  // scope=history: the dashboard's "Geçmiş" tab — every past reservation
+  // (any date, any status), newest first, optionally filtered by guest
+  // name/phone — as opposed to the default single-day operational view.
+  if (scope === "history") {
+    const todayStart = new Date(
+      `${new Date().toISOString().slice(0, 10)}T00:00:00.000Z`
+    );
+    const reservations = await prisma.reservation.findMany({
+      where: {
+        restaurantId: restaurant.id,
+        startsAt: { lt: todayStart },
+        ...(q
+          ? {
+              OR: [
+                { customerName: { contains: q } },
+                { customerPhone: { contains: q } },
+              ],
+            }
+          : {}),
+      },
+      include: { table: true },
+      orderBy: { startsAt: "desc" },
+      take: 200,
+    });
+    return NextResponse.json({ reservations });
+  }
 
   const reservations = await prisma.reservation.findMany({
     where: {

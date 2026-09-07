@@ -181,6 +181,7 @@ export const dictionary = {
       reservations: "Rezervasyonlar",
       menu: "Menü & Özel Yemekler",
       conversations: "Konuşmalar",
+      history: "Geçmiş",
       settings: "Ayarlar",
     },
     reservations: {
@@ -221,6 +222,11 @@ export const dictionary = {
         seated: "Oturdu",
         cancelled: "İptal edildi",
       },
+    },
+    history: {
+      searchPlaceholder: "Misafir adı veya telefon ile ara…",
+      empty: "Geçmiş rezervasyon bulunamadı.",
+      colDate: "Tarih",
     },
     menu: {
       menuTitle: "Menü & özel yemekler",

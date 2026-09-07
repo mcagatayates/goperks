@@ -114,7 +114,7 @@ export default function AdminDashboard({
   const t = dictionary.admin;
   const router = useRouter();
   const [tab, setTab] = useState<
-    "reservations" | "menu" | "conversations" | "settings"
+    "reservations" | "menu" | "conversations" | "history" | "settings"
   >("reservations");
 
   return (
@@ -153,6 +153,7 @@ export default function AdminDashboard({
             ["reservations", t.tabs.reservations],
             ["menu", t.tabs.menu],
             ["conversations", t.tabs.conversations],
+            ["history", t.tabs.history],
             ["settings", t.tabs.settings],
           ] as const
         ).map(([key, label]) => (
@@ -173,6 +174,7 @@ export default function AdminDashboard({
       {tab === "reservations" && <ReservationsTab slug={slug} />}
       {tab === "menu" && <MenuTab slug={slug} />}
       {tab === "conversations" && <ConversationsTab slug={slug} />}
+      {tab === "history" && <HistoryTab slug={slug} />}
       {tab === "settings" && (
         <div className="flex flex-col gap-6">
           <WhatsAppConnect slug={slug} />
@@ -938,6 +940,100 @@ function ConversationsTab({ slug }: { slug: string }) {
           </div>
         )}
       </div>
+    </section>
+  );
+}
+
+function HistoryTab({ slug }: { slug: string }) {
+  const t = dictionary.admin;
+  const [query, setQuery] = useState("");
+  const [reservations, setReservations] = useState<Reservation[] | null>(
+    null
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    const params = new URLSearchParams({ scope: "history" });
+    if (query.trim()) params.set("q", query.trim());
+    fetch(`/api/restaurants/${slug}/reservations?${params}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!cancelled) setReservations(data.reservations ?? []);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [slug, query]);
+
+  const loading = reservations === null;
+  const list = reservations ?? [];
+
+  return (
+    <section className="flex flex-col gap-4">
+      <input
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder={t.history.searchPlaceholder}
+        className="w-full max-w-sm rounded-lg border border-border bg-transparent px-3 py-2 text-sm transition focus:border-accent"
+      />
+
+      {loading ? (
+        <p className="text-sm text-muted">{t.reservations.loading}</p>
+      ) : list.length === 0 ? (
+        <EmptyState
+          icon={<IconCalendar className="h-5 w-5" />}
+          message={t.history.empty}
+        />
+      ) : (
+        <div className="overflow-x-auto rounded-xl border border-border">
+          <table className="w-full text-sm">
+            <thead className="bg-surface text-left text-xs uppercase tracking-wide text-muted">
+              <tr>
+                <th className="px-4 py-2">{t.history.colDate}</th>
+                <th className="px-4 py-2">{t.reservations.colTime}</th>
+                <th className="px-4 py-2">{t.reservations.colGuest}</th>
+                <th className="px-4 py-2">{t.reservations.colParty}</th>
+                <th className="px-4 py-2">{t.reservations.colTable}</th>
+                <th className="px-4 py-2">{t.reservations.colChannel}</th>
+                <th className="px-4 py-2">{t.reservations.colStatus}</th>
+                <th className="px-4 py-2">{t.reservations.colNotes}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {list.map((r) => (
+                <tr key={r.id} className="border-t border-border">
+                  <td className="px-4 py-2 tabular-nums">
+                    {new Date(r.startsAt).toISOString().slice(0, 10)}
+                  </td>
+                  <td className="px-4 py-2 tabular-nums">
+                    {new Date(r.startsAt).toISOString().slice(11, 16)}
+                  </td>
+                  <td className="px-4 py-2">
+                    <div>{r.customerName}</div>
+                    <div className="text-xs text-muted">
+                      {r.customerPhone}
+                    </div>
+                  </td>
+                  <td className="px-4 py-2 tabular-nums">{r.partySize}</td>
+                  <td className="px-4 py-2">{r.table?.name ?? "—"}</td>
+                  <td className="px-4 py-2">
+                    {t.channelLabels[r.channel as Channel] ?? r.channel}
+                  </td>
+                  <td className="px-4 py-2">
+                    <span
+                      className={`rounded-full px-2 py-1 text-xs font-medium ${STATUS_COLORS[r.status] ?? ""}`}
+                    >
+                      {t.statusLabels[r.status as ReservationStatus] ??
+                        r.status}
+                    </span>
+                  </td>
+                  <td className="px-4 py-2 text-muted">{r.notes ?? ""}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </section>
   );
 }

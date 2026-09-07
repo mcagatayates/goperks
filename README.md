@@ -152,6 +152,14 @@ form. These are tagged with `channel: "staff"` (as opposed to `"web"` /
 same availability engine, so they can never double-book a table the AI
 already holds, or vice versa.
 
+The dashboard's Reservations tab is deliberately single-day (a date picker,
+today by default) — that's the operational view for running tonight's
+floor. For looking back, the **Geçmiş** (History) tab lists every past
+reservation across all dates, any channel or status, newest first,
+searchable by guest name or phone (`GET .../reservations?scope=history&q=`).
+No new data model — it's the same `Reservation` rows the operational view
+uses, just queried differently.
+
 ## Waitlist
 
 When `check_availability` finds nothing free for a requested date/time and
