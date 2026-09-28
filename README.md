@@ -1,3 +1,11 @@
+## 🍽️ Ne Yesem? — yeni proje
+
+Bu repoya, "ne yesem" kararsızlığını çözen küçük bir öneri uygulaması eklendi:
+konumuna ve birkaç basit tercihine göre sana 3 restoran/kafe önerir. Kod ve
+kurulum talimatları [`ne-yesem/`](./ne-yesem) klasöründe.
+
+---
+
 # gatsby-contentful-starter
 
 Gatsby [Contentful](https://www.contentful.com) starter for creating a blog
